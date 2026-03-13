@@ -59,7 +59,7 @@ void Start()
         * Time.deltaTime * turnSpeed;
         // Update our yaw and pitch values.
         yaw += horizontal;
-        pitch += vertical;
+        pitch -= vertical;
         // Clamp pitch so that we can't look directly down or up.
         pitch = Mathf.Clamp(pitch, headLowerAngleLimit, headUpperAngleLimit);
         // Compute a rotation for the body by rotating around the y-axis
