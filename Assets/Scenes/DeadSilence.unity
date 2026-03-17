@@ -971,7 +971,11 @@ RectTransform:
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 80, y: 50}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_SizeDelta: {x: 90, y: 30}
+=======
+  m_SizeDelta: {x: 100, y: 30}
+>>>>>>> Stashed changes
 =======
   m_SizeDelta: {x: 100, y: 30}
 >>>>>>> Stashed changes
@@ -1520,7 +1524,11 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_AnchoredPosition: {x: 250, y: 45}
+=======
+  m_AnchoredPosition: {x: 260, y: 45}
+>>>>>>> Stashed changes
 =======
   m_AnchoredPosition: {x: 260, y: 45}
 >>>>>>> Stashed changes
@@ -1566,7 +1574,11 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_Interactable: 1
+=======
+  m_Interactable: 0
+>>>>>>> Stashed changes
 =======
   m_Interactable: 0
 >>>>>>> Stashed changes
@@ -1593,7 +1605,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b202c20410f5c848923863806e0f8cf, type: 3}
   m_Name: 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_EditorClassIdentifier: Assembly-CSharp::UIBarColor
+=======
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
+>>>>>>> Stashed changes
 =======
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
 >>>>>>> Stashed changes
@@ -1750,7 +1766,11 @@ RectTransform:
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 80, y: 80}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_SizeDelta: {x: 90, y: 30}
+=======
+  m_SizeDelta: {x: 100, y: 30}
+>>>>>>> Stashed changes
 =======
   m_SizeDelta: {x: 100, y: 30}
 >>>>>>> Stashed changes
@@ -3045,7 +3065,11 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_AnchoredPosition: {x: 250, y: 75}
+=======
+  m_AnchoredPosition: {x: 260, y: 75}
+>>>>>>> Stashed changes
 =======
   m_AnchoredPosition: {x: 260, y: 75}
 >>>>>>> Stashed changes
@@ -3091,7 +3115,11 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_Interactable: 1
+=======
+  m_Interactable: 0
+>>>>>>> Stashed changes
 =======
   m_Interactable: 0
 >>>>>>> Stashed changes
@@ -3118,7 +3146,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b202c20410f5c848923863806e0f8cf, type: 3}
   m_Name: 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   m_EditorClassIdentifier: Assembly-CSharp::UIBarColor
+=======
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
+>>>>>>> Stashed changes
 =======
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
 >>>>>>> Stashed changes
