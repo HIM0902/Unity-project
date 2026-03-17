@@ -56,11 +56,13 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isDead) return;
         currentHealth = Mathf.Clamp(currentHealth + amount, 0f, maxHealth);
+        onDamaged?.Invoke();
     }
 
     public void AddArmor(float amount)
     {
         currentArmor = Mathf.Clamp(currentArmor + amount, 0f, maxArmor);
+        onDamaged?.Invoke();
     }
 
     public float GetHealthPercent() => currentHealth / maxHealth;
