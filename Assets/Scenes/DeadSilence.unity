@@ -1563,6 +1563,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
   Slider: {fileID: 727081936}
   fillImage: {fileID: 1911590577}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 --- !u!1 &860705733
 GameObject:
@@ -2232,6 +2235,9 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1386169070}
   m_CullTransparentMesh: 1
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 --- !u!1 &1521937641
 GameObject:
@@ -3084,6 +3090,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HealthBarColor
   Slider: {fileID: 1709984705}
   fillImage: {fileID: 167713982}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 --- !u!1 &1732848576
 GameObject:
