@@ -72,10 +72,16 @@ public class HUDManager : MonoBehaviour
         if (PlayerHealth.Instance == null) return;
 
         if (healthSlider != null)
-            healthSlider.value = PlayerHealth.Instance.GetHealthPercent();
+        {
+            healthSlider.maxValue = PlayerHealth.Instance.maxHealth;
+            healthSlider.value = PlayerHealth.Instance.currentHealth;
+        }
 
         if (armorSlider != null)
-            armorSlider.value = PlayerHealth.Instance.GetArmorPercent();
+        {
+            armorSlider.maxValue = PlayerHealth.Instance.maxArmor;
+            armorSlider.value = PlayerHealth.Instance.currentArmor;
+        }
 
         if (healthText != null)
             healthText.text = Mathf.RoundToInt(PlayerHealth.Instance.currentHealth).ToString();
