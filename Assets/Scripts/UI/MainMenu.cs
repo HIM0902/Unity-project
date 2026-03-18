@@ -7,7 +7,7 @@ public class MainMenu : MonoBehaviour
     public void PlayGame()
     {
         Debug.Log("Loading game...");
-        SceneManager.LoadSceneAsync("DeadSilence");
+        SceneManager.LoadSceneAsync(1); // Scene 1 = DeadSilence
     }
 
     public void ExitGame()
