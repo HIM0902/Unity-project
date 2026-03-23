@@ -1,4 +1,5 @@
 using UnityEngine;
+using ZombieAI;
 
 public class Gun : MonoBehaviour
 {
@@ -52,6 +53,9 @@ public class Gun : MonoBehaviour
     void Shoot()
     {
         currentAmmo--;
+
+        // ALERT ZOMBIES — gunshot is loud!
+        SoundEmitter.EmitSound(transform.position, 2.5f);
 
         // Use override if set, otherwise fall back to WeaponData
         GameObject flashPrefab = muzzleFlashOverride != null ? muzzleFlashOverride : weaponData.muzzleFlashPrefab;
