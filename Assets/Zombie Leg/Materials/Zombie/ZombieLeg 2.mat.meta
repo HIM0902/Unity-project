@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1d65137a0f217414ea1db6678e5a573d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194674
+  packageName: Zombie (with brain and legs)
+  packageVersion: 1.0
+  assetPath: Assets/Zombie Leg/Materials/Zombie/ZombieLeg 2.mat
+  uploadId: 455785

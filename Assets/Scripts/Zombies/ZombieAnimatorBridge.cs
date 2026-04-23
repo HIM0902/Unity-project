@@ -36,9 +36,19 @@ namespace ZombieAI
 
         private void Update()
         {
-            // Blend locomotion speed
-            float speed = agent.velocity.magnitude / agent.speed;
-            animator.SetFloat(SpeedHash, speed, 0.1f, Time.deltaTime);
+            float normalizedSpeed = 0f;
+
+            // If agent.speed is 0 (Attack state), don't divide.
+            if (agent != null && agent.speed > 0.001f)
+            {
+                normalizedSpeed = agent.velocity.magnitude / agent.speed;
+            }
+
+            // Extra safety: if anything goes weird, force it back to 0.
+            if (float.IsNaN(normalizedSpeed) || float.IsInfinity(normalizedSpeed))
+                normalizedSpeed = 0f;
+
+            animator.SetFloat(SpeedHash, normalizedSpeed, 0.1f, Time.deltaTime);
         }
 
         private void HandleStateChanged(ZombieState from, ZombieState to)

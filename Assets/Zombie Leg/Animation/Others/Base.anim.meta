@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9dd2f67838146ea4e89d7339f9aede53
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194674
+  packageName: Zombie (with brain and legs)
+  packageVersion: 1.0
+  assetPath: Assets/Zombie Leg/Animation/Others/Base.anim
+  uploadId: 455785
