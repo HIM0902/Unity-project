@@ -3,94 +3,186 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Implements character controller movement.
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(AudioSource))]
 public class Movement : MonoBehaviour
 {
-    // The speed at which we can move, in units per second.
-    [SerializeField] float moveSpeed = 6;
-    // The height of a jump, in units.
-    [SerializeField] float jumpHeight = 2;
-    // The rate at which our vertical speed will be reduced, in units
-    // per second.
-    [SerializeField] float gravity = 20;
-    // The degree to which we can control our movement while in midair.
-    [Range(0, 10), SerializeField] float airControl = 5;
-    // Our current movement direction. If we're on the ground, we have
-    // direct control over it, but if we're in the air, we only have
-    // partial control over it.
+    [Header("Movement")]
+    [SerializeField] float walkSpeed = 4f;
+    [SerializeField] float runSpeed = 6f;
+    [SerializeField] float jumpHeight = 2f;
+    [SerializeField] float gravity = 20f;
+    [Range(0, 10), SerializeField] float airControl = 5f;
+    [SerializeField] float minimumAirTimeForLandSound = 0.15f;
+
+    [Header("Footsteps")]
+    [SerializeField] float stepInterval = 2f;
+    [SerializeField] AudioClip[] footstepSounds;
+    [SerializeField] AudioClip jumpSound;
+    [SerializeField] AudioClip landSound;
+
     Vector3 moveDirection = Vector3.zero;
-    // A cached reference to the character controller, which we'll be
-    // using often.
     CharacterController controller;
+    AudioSource audioSource;
+
+    float stepCycle = 0f;
+    float nextStep = 0f;
+    bool previouslyGrounded;
+    bool jumpPressed;
+    float airTime = 0f;
+
+    public Vector3 CurrentVelocity { get; private set; }
+    public bool IsMoving { get; private set; }
+    public bool IsRunning { get; private set; }
+    public bool IsGrounded => controller != null && controller.isGrounded;
+    public float MoveAmount { get; private set; }
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        audioSource = GetComponent<AudioSource>();
+
+        stepCycle = 0f;
+        nextStep = stepInterval * 0.5f;
+        previouslyGrounded = controller.isGrounded;
     }
-    // We do our movement logic in FixedUpdate so that our movement
-    // can happen at the same pace as physics updates. If it didn't,
-    // we'd see jitter when we interact with physics objects that can
-    // move around.
+
+    void Update()
+    {
+        if (!jumpPressed)
+        {
+            jumpPressed = Input.GetButtonDown("Jump");
+        }
+
+        HandleLandingAndAirSounds();
+    }
+
     void FixedUpdate()
     {
-        // The input vector describes the user's desired local-space
-        // movement; if we're on the ground, this will immediately
-        // become our movement, but if we're in the air, we'll
-        // interpolate between our current movement and this vector, to
-        // simulate momentum.
+        float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? runSpeed : walkSpeed;
+        IsRunning = Input.GetKey(KeyCode.LeftShift);
+
         var input = new Vector3(
-        Input.GetAxis("Horizontal"),
-        0,
-        Input.GetAxis("Vertical")
+            Input.GetAxis("Horizontal"),
+            0,
+            Input.GetAxis("Vertical")
         );
-        // Multiply this movement by our desired movement speed
-        input *= moveSpeed;
-        // The controller's Move method uses world-space directions, so
-        // we need to convert this direction to world space
+
+        input = Vector3.ClampMagnitude(input, 1f);
+        MoveAmount = input.magnitude;
+        IsMoving = MoveAmount > 0.1f;
+
+        input *= currentSpeed;
         input = transform.TransformDirection(input);
 
-        // Is the controller's bottommost point touching the ground?
         if (controller.isGrounded)
         {
-            // Figure out how much movement we want to apply in local
-            // space.
             moveDirection = input;
-            // Is the user pressing the jump button right now?
-            if (Input.GetButton("Jump"))
+
+            if (jumpPressed)
             {
-                // Calculate the amount of upward speed we need,
-                // considering that we add moveDirection.y to our height
-                // every frame, and we reduce moveDirection.y by gravity
-                // every frame.
                 moveDirection.y = Mathf.Sqrt(2 * gravity * jumpHeight);
+                PlayJumpSound();
+                jumpPressed = false;
             }
             else
             {
-                // We're on the ground, but not jumping. Set our
-                // downward movement to 0 (otherwise, because we're
-                // continuously reducing our y-movement, if we walk off
-                // a ledge, we'd suddenly have a huge amount of
-                // downwards momentum).
                 moveDirection.y = 0;
             }
         }
         else
         {
-            // Slowly bring our movement towards the user's desired
-            // input, but preserve our current y-direction (so that the
-            // arc of the jump is preserved)
             input.y = moveDirection.y;
-            moveDirection = Vector3.Lerp(moveDirection, input,
-            airControl * Time.deltaTime);
+            moveDirection = Vector3.Lerp(moveDirection, input, airControl * Time.deltaTime);
         }
-        // Bring our movement down by applying gravity over time
+
         moveDirection.y -= gravity * Time.deltaTime;
-        // Move the controller. The controller will refuse to move into
-        // other colliders, which means that we won't clip through the
-        // ground or other colliders. (However, this doesn't stop other
-        // colliders from moving into us. For that, we'd need to detect
-        // when we're overlapping another collider, and move away from
-        // them. We'll cover this in another recipe!)
+
         controller.Move(moveDirection * Time.deltaTime);
+
+        CurrentVelocity = controller.velocity;
+
+        ProgressStepCycle(currentSpeed);
     }
 
+    void HandleLandingAndAirSounds()
+    {
+        if (!controller.isGrounded)
+        {
+            airTime += Time.deltaTime;
+        }
+
+        if (!previouslyGrounded && controller.isGrounded)
+        {
+            if (airTime >= minimumAirTimeForLandSound)
+            {
+                PlayLandSound();
+            }
+
+            jumpPressed = false;
+            airTime = 0f;
+        }
+
+        if (controller.isGrounded && previouslyGrounded)
+        {
+            airTime = 0f;
+        }
+
+        previouslyGrounded = controller.isGrounded;
+    }
+
+    void ProgressStepCycle(float speed)
+    {
+        if (!controller.isGrounded)
+        {
+            return;
+        }
+
+        if (controller.velocity.sqrMagnitude > 0.1f && IsMoving)
+        {
+            stepCycle += (controller.velocity.magnitude + (speed * (IsRunning ? 1.25f : 1f))) * Time.fixedDeltaTime;
+        }
+
+        if (stepCycle > nextStep)
+        {
+            nextStep = stepCycle + stepInterval;
+            PlayFootstepAudio();
+        }
+    }
+
+    void PlayFootstepAudio()
+    {
+        if (!controller.isGrounded)
+        {
+            return;
+        }
+
+        if (footstepSounds == null || footstepSounds.Length == 0)
+        {
+            return;
+        }
+
+        int soundIndex = Random.Range(0, footstepSounds.Length);
+        audioSource.PlayOneShot(footstepSounds[soundIndex]);
+    }
+
+    void PlayJumpSound()
+    {
+        if (jumpSound == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(jumpSound);
+    }
+
+    void PlayLandSound()
+    {
+        if (landSound == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(landSound);
+    }
 }
