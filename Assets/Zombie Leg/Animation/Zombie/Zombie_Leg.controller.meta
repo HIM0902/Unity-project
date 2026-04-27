@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3c344d2f48d3346468ab3144515050c0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194674
+  packageName: Zombie (with brain and legs)
+  packageVersion: 1.0
+  assetPath: Assets/Zombie Leg/Animation/Zombie/Zombie_Leg.controller
+  uploadId: 455785

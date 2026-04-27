@@ -7,69 +7,152 @@ using UnityEngine;
 // around the x-axis.
 public class MouseLook : MonoBehaviour
 {
-    // The speed at which we turn. In other words, mouse sensitivity.
+    [Header("Look")]
     [SerializeField] float turnSpeed = 90f;
-    // How far up the head can tilt, measured in angles from dead-
-    // level. Must be higher than headLowerAngleLimit.
     [SerializeField] float headUpperAngleLimit = 85f;
-    // How far down the head can tilt, measured in angles from dead-
-    // level. Must be lower than headLowerAngleLimit.
     [SerializeField] float headLowerAngleLimit = -80f;
-    // Our current rotation from our start, in degrees
+
+    [Header("Head Bob")]
+    [SerializeField] bool useHeadBob = true;
+    [SerializeField] float walkBobSpeed = 10f;
+    [SerializeField] float runBobSpeed = 14f;
+    [SerializeField] float walkBobAmount = 0.05f;
+    [SerializeField] float runBobAmount = 0.08f;
+    [SerializeField] float horizontalBobAmount = 0.03f;
+    [SerializeField] float bobReturnSpeed = 8f;
+
+    [Header("Jump/Land Bob")]
+    [SerializeField] float landingBobAmount = 0.08f;
+    [SerializeField] float landingBobSpeed = 10f;
+
+    [Header("Accuracy")]
+    [SerializeField] float movingAimPenalty = 1.5f;
+    [SerializeField] float runningAimPenalty = 3f;
+    [SerializeField] float airborneAimPenalty = 4f;
+
     float yaw = 0f;
     float pitch = 0f;
-    // Stores the orientations of the head and body when the game
-    // started. We'll derive new orientations by combining these
-    // with our yaw and pitch.
+
     Quaternion bodyStartOrientation;
     Quaternion headStartOrientation;
-    // A reference to the head object—the object to rotate up and down.
-    // (The body is the current object, so we don't need a variable to
-    // store a reference to it.) Not exposed in the interface; instead,
-    // we'll figure out what to use by looking for a Camera child object
-    // at game start.
+
     Transform head;
+    Vector3 headStartLocalPosition;
+    Movement movement;
 
+    float bobTimer = 0f;
+    float landingOffset = 0f;
+    bool wasGrounded = true;
 
-// When the game starts, perform initial setup.
-void Start()
+    public float CurrentAimPenalty { get; private set; }
+
+    void Start()
     {
-        // Find our head object
         head = GetComponentInChildren<Camera>().transform;
-        // Cache the orientation of the body and head
+        movement = GetComponent<Movement>();
+
         bodyStartOrientation = transform.localRotation;
-        headStartOrientation = head.transform.localRotation;
-        // Lock and hide the cursor
+        headStartOrientation = head.localRotation;
+        headStartLocalPosition = head.localPosition;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        if (movement != null)
+        {
+            wasGrounded = movement.IsGrounded;
+        }
     }
 
-    // Every time physics updates, update our movement. (We do this in
-    // FixedUpdate to keep pace with physically simulated objects. If
-    // you won't be interacting with physics objects, you can do
-    // this in Update instead.)
-    void FixedUpdate()
+    void Update()
     {
-        // Read the current horizontal movement, and scale it based on
-        // the amount of time that's elapsed and the movement speed.
-        var horizontal = Input.GetAxis("Mouse X")
-        * Time.deltaTime * turnSpeed;
-        // Same for vertical.
-        var vertical = Input.GetAxis("Mouse Y")
-        * Time.deltaTime * turnSpeed;
-        // Update our yaw and pitch values.
+        UpdateLook();
+        UpdateHeadBob();
+        UpdateAimPenalty();
+    }
+
+    void UpdateLook()
+    {
+        var horizontal = Input.GetAxis("Mouse X") * Time.deltaTime * turnSpeed;
+        var vertical = Input.GetAxis("Mouse Y") * Time.deltaTime * turnSpeed;
+
         yaw += horizontal;
-        pitch += vertical;
-        // Clamp pitch so that we can't look directly down or up.
+        pitch -= vertical;
         pitch = Mathf.Clamp(pitch, headLowerAngleLimit, headUpperAngleLimit);
-        // Compute a rotation for the body by rotating around the y-axis
-        // by the number of yaw degrees, and for the head around the
-        // x-axis by the number of pitch degrees.
+
         var bodyRotation = Quaternion.AngleAxis(yaw, Vector3.up);
         var headRotation = Quaternion.AngleAxis(pitch, Vector3.right);
-        // Create new rotations for the body and head by combining them
-        // with their start rotations.
+
         transform.localRotation = bodyRotation * bodyStartOrientation;
         head.localRotation = headRotation * headStartOrientation;
+    }
+
+    void UpdateHeadBob()
+    {
+        if (!useHeadBob || movement == null)
+        {
+            return;
+        }
+
+        Vector3 targetPosition = headStartLocalPosition;
+
+        if (movement.IsGrounded && movement.IsMoving)
+        {
+            float bobSpeed = movement.IsRunning ? runBobSpeed : walkBobSpeed;
+            float bobAmount = movement.IsRunning ? runBobAmount : walkBobAmount;
+
+            bobTimer += Time.deltaTime * bobSpeed;
+
+            float verticalBob = Mathf.Sin(bobTimer) * bobAmount;
+            float horizontalBob = Mathf.Cos(bobTimer * 0.5f) * horizontalBobAmount;
+
+            targetPosition.x += horizontalBob;
+            targetPosition.y += verticalBob;
+        }
+        else
+        {
+            bobTimer = 0f;
+        }
+
+        if (!wasGrounded && movement.IsGrounded)
+        {
+            landingOffset = landingBobAmount;
+        }
+
+        wasGrounded = movement.IsGrounded;
+
+        landingOffset = Mathf.Lerp(landingOffset, 0f, Time.deltaTime * landingBobSpeed);
+        targetPosition.y -= landingOffset;
+
+        head.localPosition = Vector3.Lerp(head.localPosition, targetPosition, Time.deltaTime * bobReturnSpeed);
+    }
+
+    void UpdateAimPenalty()
+    {
+        if (movement == null)
+        {
+            CurrentAimPenalty = 0f;
+            return;
+        }
+
+        if (!movement.IsGrounded)
+        {
+            CurrentAimPenalty = airborneAimPenalty;
+            return;
+        }
+
+        if (movement.IsRunning && movement.IsMoving)
+        {
+            CurrentAimPenalty = runningAimPenalty;
+            return;
+        }
+
+        if (movement.IsMoving)
+        {
+            CurrentAimPenalty = movingAimPenalty;
+            return;
+        }
+
+        CurrentAimPenalty = 0f;
     }
 }

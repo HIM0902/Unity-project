@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d182d13b856d6204398431f6d76ccade
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 194674
+  packageName: Zombie (with brain and legs)
+  packageVersion: 1.0
+  assetPath: Assets/Zombie Leg/Materials/Others/SkyBox.mat
+  uploadId: 455785
