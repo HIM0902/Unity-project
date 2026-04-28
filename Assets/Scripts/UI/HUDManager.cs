@@ -30,6 +30,9 @@ public class HUDManager : MonoBehaviour
     public GameObject infectionWarning;
     public TextMeshProUGUI infectionPercentText;
 
+    [Header("Weapon Status")]
+    public GameObject reloadingTextObject;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -102,6 +105,28 @@ public class HUDManager : MonoBehaviour
 
         if (lowAmmoWarning != null && PlayerAmmo.Instance.currentAmmo > 5)
             lowAmmoWarning.SetActive(false);
+    }
+
+    public void ShowReloading()
+    {
+        if (reloadingTextObject != null)
+            reloadingTextObject.SetActive(true);
+    }
+
+    public void UpdateAmmoUI(int current, int reserve)
+    {
+        if (ammoCurrentText != null)
+            ammoCurrentText.text = current.ToString("D2");
+
+        if (ammoReserveText != null)
+            ammoReserveText.text = reserve.ToString();
+
+        if (lowAmmoWarning != null)
+            lowAmmoWarning.SetActive(current <= 5);
+
+        
+        if (reloadingTextObject != null)
+            reloadingTextObject.SetActive(false); 
     }
 
     public void ShowLowAmmoWarning()
