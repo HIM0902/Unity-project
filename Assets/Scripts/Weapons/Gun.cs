@@ -31,6 +31,7 @@ public class Gun : MonoBehaviour
             audioSource = gameObject.AddComponent<AudioSource>();
 
         currentAmmo = weaponData.maxAmmo;
+        UpdateHUDAmmo();
     }
 
     void Update()
@@ -53,6 +54,7 @@ public class Gun : MonoBehaviour
     void Shoot()
     {
         currentAmmo--;
+        UpdateHUDAmmo();
 
         // ALERT ZOMBIES — gunshot is loud!
         SoundEmitter.EmitSound(transform.position, 2.5f);
@@ -108,10 +110,24 @@ public class Gun : MonoBehaviour
         isReloading = true;
         Debug.Log("Reloading...");
 
+        if (HUDManager.Instance != null) HUDManager.Instance.ShowReloading();
+
         yield return new WaitForSeconds(weaponData.reloadTime);
 
         currentAmmo = weaponData.maxAmmo;
         isReloading = false;
+        
+        UpdateHUDAmmo(); // This automatically changes "RELOADING" back to numbers!
+        
         Debug.Log("Reloaded!");
+    }
+
+    private void UpdateHUDAmmo()
+    {
+        if (HUDManager.Instance != null)
+        {
+            
+            HUDManager.Instance.UpdateAmmoUI(currentAmmo, weaponData.maxAmmo);
+        }
     }
 }
