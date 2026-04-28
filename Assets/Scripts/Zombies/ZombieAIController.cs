@@ -441,6 +441,24 @@ namespace ZombieAI
             #endif
         }
 
+        // ───────────────────────── Wave Scaling ─────────────────────────────────
+
+        
+        public void ApplySpeedMultiplier(float multiplier)
+        {
+            // multiply the base speed so we dont lose the buff when switching states
+            baseSpeed = baseSpeed * multiplier;
+            
+            // update the agent immediately just in case
+            if (agent != null) 
+            {
+                agent.speed = baseSpeed;
+                
+                // print the exact speed to the console so i know it works
+                Debug.Log("zombie spawned! base speed is now: " + agent.speed + " with a multiplier of: " + multiplier);
+            }
+        }
+
         // ───────────────────────── Navigation Helpers ───────────────────────
 
         private void SetRandomPatrolPoint()

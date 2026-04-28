@@ -20,6 +20,7 @@ public class WaveSpawner : MonoBehaviour
     public int baseZombiesPerWave = 3;
     public int additionalZombiesPerWave = 2; 
     public int scorePerKill = 100; // NEW: How many points a zombie is worth
+    public float speedBoostPerTier = 0.25f; // NEW: adds 25% extra speed every 5 waves
     
     private int currentWave = 0;
     public int zombiesAlive = 0; 
@@ -37,6 +38,13 @@ public class WaveSpawner : MonoBehaviour
         if (zombiesAlive <= 0 && !isSpawning && currentWave > 0)
         {
             StartCoroutine(SpawnWave());
+        }
+
+        // press F9 to instantly skip 4 waves for testing
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            currentWave += 4; 
+            Debug.Log("skipped to wave: " + currentWave); //REMOVE THIS BEFORE RELEASE, ITS JUST FOR TESTING
         }
     }
 
@@ -83,14 +91,28 @@ public class WaveSpawner : MonoBehaviour
         NavMeshHit hit;
         if (NavMesh.SamplePosition(randomSpawnPoint.position, out hit, 2.0f, NavMesh.AllAreas))
         {
-            Instantiate(randomZombiePrefab, hit.position, randomSpawnPoint.rotation);
+            GameObject spawnedZombie = Instantiate(randomZombiePrefab, hit.position, randomSpawnPoint.rotation);
+
+            int speedTier = currentWave / 5;
+            speedTier = Mathf.Clamp(speedTier, 0, 3); 
+            float currentSpeedMultiplier = 1f + (speedBoostPerTier * speedTier);
+
+            // --- THE FIX ---
+            // Use GetComponentInChildren just in case the script is hiding on a nested object
+            ZombieAI.ZombieAIController aiScript = spawnedZombie.GetComponentInChildren<ZombieAI.ZombieAIController>();
+            
+            if (aiScript != null)
+            {
+                aiScript.ApplySpeedMultiplier(currentSpeedMultiplier);
+            }
+            else
+            {
+                // If it STILL can't find it, it will scream at you in red text
+                Debug.LogError("BROKEN LINK: The Spawner couldn't find the ZombieAIController on the prefab!");
+            }
 
             zombiesAlive++;
             UpdateUI();
-        }
-        else
-        {
-            Debug.LogWarning("Failed to spawn! " + randomSpawnPoint.name + " is too far from a baked NavMesh.");
         }
     }
 
