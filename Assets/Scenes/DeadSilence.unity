@@ -4075,6 +4075,7 @@ GameObject:
   - component: {fileID: 1781033885}
   - component: {fileID: 1781033884}
   - component: {fileID: 1781033886}
+  - component: {fileID: 1781033887}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -4145,6 +4146,19 @@ MonoBehaviour:
   scorePerKill: 100
   speedBoostPerTier: 0.25
   zombiesAlive: 0
+--- !u!114 &1781033887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1781033883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ef25b79b05c5f241acdb37afe85a88c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameOverManager
+  delay: 0
 --- !u!1001 &1811169908
 PrefabInstance:
   m_ObjectHideFlags: 0
