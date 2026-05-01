@@ -17,6 +17,10 @@ public class GameOverManager : MonoBehaviour
 
     private void LoadGameOverScene()
     {
+        // Enable cursor for menu scenes
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         SceneManager.LoadScene("GameOver");
     }
 }
