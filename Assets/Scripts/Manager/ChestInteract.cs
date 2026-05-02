@@ -43,6 +43,10 @@ public class ChestInteract : MonoBehaviour
             // Inform manager
             if (ChestManager.Instance != null)
                 ChestManager.Instance.MarkOpened(this);
+
+            // Inform cure manager (only once because hasOpened becomes true)
+            if (CureManager.Instance != null)
+                CureManager.Instance.CollectPart(chestId);
         }
     }
 
