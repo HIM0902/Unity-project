@@ -11,6 +11,9 @@ public class ChestManager : MonoBehaviour
     [Header("Indicator Reference")]
     [SerializeField] private OnscreenIndicator indicator;
 
+    [Header("Extraction Target (set this to ExtractionPoint or Helipad marker)")]
+    [SerializeField] private Transform extractionTarget;
+
     private readonly List<ChestInteract> chests = new List<ChestInteract>();
     private readonly HashSet<string> opened = new HashSet<string>();
 
@@ -41,7 +44,7 @@ public class ChestManager : MonoBehaviour
 
         opened.Add(chest.chestId);
 
-        // Optional: if we were pointing at this chest, hide the indicator
+        // If we were pointing at this chest, hide the indicator
         if (indicator != null && indicator.IsShowing && indicator.CurrentTarget == chest.transform)
         {
             indicator.Hide();
@@ -52,6 +55,14 @@ public class ChestManager : MonoBehaviour
     {
         if (!Input.GetKeyDown(hintKey)) return;
 
+        // After cure is complete, point to extraction
+        if (CureManager.Instance != null && CureManager.Instance.IsCureComplete)
+        {
+            ShowOrToggleTarget(extractionTarget, "Extraction");
+            return;
+        }
+
+        // Otherwise, point to the next unopened chest
         ChestInteract next = GetNextUnopenedChest();
 
         if (next == null)
@@ -61,20 +72,34 @@ public class ChestManager : MonoBehaviour
             return;
         }
 
-        if (indicator != null)
+        ShowOrToggleTarget(next.transform, "Next chest: " + next.chestId);
+    }
+
+    private void ShowOrToggleTarget(Transform target, string debugLabel)
+    {
+        if (indicator == null)
         {
-            // Toggle behavior: pressing H again hides if already pointing at the next chest
-            if (indicator.IsShowing && indicator.CurrentTarget == next.transform)
-            {
-                indicator.Hide();
-            }
-            else
-            {
-                indicator.ShowForTarget(next.transform);
-            }
+            Debug.LogWarning("ChestManager: Indicator reference is missing.");
+            return;
         }
 
-        Debug.Log("Next chest: " + next.chestId);
+        if (target == null)
+        {
+            Debug.LogWarning("ChestManager: Target reference is missing.");
+            return;
+        }
+
+        // Toggle behavior: pressing H again hides if already pointing at the same target
+        if (indicator.IsShowing && indicator.CurrentTarget == target)
+        {
+            indicator.Hide();
+        }
+        else
+        {
+            indicator.ShowForTarget(target);
+        }
+
+        Debug.Log(debugLabel);
     }
 
     private ChestInteract GetNextUnopenedChest()
