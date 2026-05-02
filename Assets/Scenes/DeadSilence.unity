@@ -5175,12 +5175,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2126429179}
-  - component: {fileID: 2126429186}
   - component: {fileID: 2126429181}
+  - component: {fileID: 2126429186}
   - component: {fileID: 2126429180}
   - component: {fileID: 2126429182}
   - component: {fileID: 2126429184}
   - component: {fileID: 2126429183}
+  - component: {fileID: 2126429187}
   - component: {fileID: 2126429185}
   m_Layer: 0
   m_Name: Player
@@ -5223,6 +5224,13 @@ MonoBehaviour:
   gravity: 20
   airControl: 5
   minimumAirTimeForLandSound: 0.25
+  crouchKey: 99
+  crouchSpeed: 2
+  standingHeight: 2
+  crouchHeight: 0.5
+  crouchTransitionSpeed: 10
+  head: {fileID: 253115883}
+  crouchHeadOffset: 0.5
   stepInterval: 4
   footstepSounds:
   - {fileID: 8300000, guid: 3c5d1f256ccf57a4ba943d759789ddc0, type: 3}
@@ -5440,6 +5448,27 @@ MonoBehaviour:
   indicatorRightPrefab: {fileID: 2718414212738414534, guid: e9e2847f82779e948bc7420b426cbc24, type: 3}
   edgePadding: 40
   worldOffset: {x: 0, y: 1.5, z: 0}
+--- !u!114 &2126429187
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2126429178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb9fa90bff0f0474b80b49572ede7fb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieAI.SoundEmitter
+  mode: 0
+  manualLoudness: 1
+  walkStepInterval: 0.5
+  walkLoudness: 0.5
+  runStepInterval: 0.25
+  runLoudness: 1.2
+  crouchLoudness: 0.1
+  movementThreshold: 0.2
+  runSpeedThreshold: 5
 --- !u!1001 &6309245837395725935
 PrefabInstance:
   m_ObjectHideFlags: 0

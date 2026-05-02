@@ -94,7 +94,12 @@ public class MouseLook : MonoBehaviour
             return;
         }
 
+        // Start from the default local position...
         Vector3 targetPosition = headStartLocalPosition;
+
+        // ...but use Movement's crouch-adjusted base head Y.
+        // This prevents crouch and headbob from fighting each other.
+        targetPosition.y = movement.CurrentHeadBaseY;
 
         if (movement.IsGrounded && movement.IsMoving)
         {
