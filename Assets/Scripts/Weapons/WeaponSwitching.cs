@@ -13,20 +13,19 @@ public class WeaponSwitching : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
             EquipAK();
-        }
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
             EquipKnife();
-        }
     }
 
     void EquipAK()
     {
         ak.SetActive(true);
         knife.SetActive(false);
+
+        if (HUDManager.Instance != null)
+            HUDManager.Instance.ShowGunMode("AK-47");
     }
 
     void EquipKnife()
@@ -34,10 +33,7 @@ public class WeaponSwitching : MonoBehaviour
         ak.SetActive(false);
         knife.SetActive(true);
 
-        Animator knifeAnimator = knife.GetComponent<Animator>();
-        if (knifeAnimator != null)
-        {
-            knifeAnimator.SetTrigger("Equip");
-        }
+        if (HUDManager.Instance != null)
+            HUDManager.Instance.ShowKnifeMode();
     }
 }
