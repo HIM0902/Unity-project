@@ -10691,6 +10691,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff496f15f8e7dac4b9b2159eb1c999e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveSpawner
+  player: {fileID: 2126429179}
+  minSpawnDistance: 15
+  maxSpawnDistance: 30
   zombiePrefabs:
   - {fileID: 1742400287947849862, guid: 3d0dda251ccdbee46b500b991f78acab, type: 3}
   - {fileID: 1709742707922533530, guid: 8bdd73f0e4ed86848a204b8b98d05faf, type: 3}
@@ -12287,6 +12290,7 @@ GameObject:
   - component: {fileID: 2126429187}
   - component: {fileID: 2126429185}
   - component: {fileID: 2126429188}
+  - component: {fileID: 2126429189}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -12587,6 +12591,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSwitching
   ak: {fileID: 1097971758}
   knife: {fileID: 1142671345}
+--- !u!114 &2126429189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2126429178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ebdcc15a5cef404cb19fc0fd537f008, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerKnockback
+  decayRate: 5
+  forceScale: 1
+  horizontalOnly: 1
 --- !u!1 &2143470795
 GameObject:
   m_ObjectHideFlags: 0

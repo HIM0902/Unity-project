@@ -866,9 +866,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2221426a05d6143c493aed25f3c84276, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieAI.ZombieAIController
+  maxLeashDistance: 45
   player: {fileID: 0}
   hearingRange: 30
-  bumpDetectRange: 1.5
+  bumpDetectRange: 2
   attackRange: 2
   attackDamage: 10
   attackCooldown: 1.5

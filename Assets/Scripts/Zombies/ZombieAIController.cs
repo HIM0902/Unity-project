@@ -8,8 +8,8 @@ namespace ZombieAI
     {
         // ───────────────────────── Inspector Fields ─────────────────────────
         [Header("Rubber Band System")]
-        public float maxLeashDistance = 45f; // If they get this far behind, teleport them
-        
+        public float maxLeashDistance = 45f;
+
         [Header("References")]
         [Tooltip("The player Transform. Auto-detected via 'Player' tag if left empty.")]
         public Transform player;
@@ -19,8 +19,11 @@ namespace ZombieAI
         [SerializeField] private float hearingRange = 30f;
 
         [Header("Proximity (Bumping Into Player)")]
-        [Tooltip("Distance at which the zombie detects the player by touch/proximity.")]
-        [SerializeField] private float bumpDetectRange = 1.5f;
+        [Tooltip("Distance at which an ALERTED zombie (Chase/Search/Investigate) attacks on contact.")]
+        [SerializeField] private float bumpDetectRange = 2f;
+
+        [Tooltip("Distance at which an IDLE zombie attacks on PHYSICAL contact only. Keep small — zombie is unaware so player should be able to sneak past.")]
+        [SerializeField] private float idleBumpDetectRange = 0.8f;
 
         [Header("Combat")]
         [Tooltip("Distance at which the zombie can melee the player.")]
@@ -29,14 +32,27 @@ namespace ZombieAI
         [Tooltip("Damage dealt per attack.")]
         [SerializeField] private float attackDamage = 10f;
 
-        [Tooltip("Seconds between attacks.")]
+        [Tooltip("Seconds between attacks (full swing-to-swing cycle). Should be LARGER than Attack Windup Time.")]
         [SerializeField] private float attackCooldown = 1.5f;
+
+        [Tooltip("Seconds between starting the kick animation and the damage actually landing. Tune this to match the foot-impact frame of your kick animation. Typical kicks: 0.3 - 0.5s.")]
+        [SerializeField] private float attackWindupTime = 0.4f;
+
+        [Tooltip("If TRUE, damage is applied via Animation Event ONLY. If FALSE, uses Attack Windup Time delay.")]
+        [SerializeField] private bool useAnimationEventForDamage = false;
+
+        [Header("Knockback (When Kick Lands)")]
+        [Tooltip("How hard the player gets pushed away horizontally when the kick connects.")]
+        [SerializeField] private float knockbackForce = 8f;
+
+        [Tooltip("Small upward kick to make the player stagger / lift slightly. Set to 0 for a flat shove.")]
+        [SerializeField] private float knockbackUpwardForce = 2f;
 
         [Header("Patrol")]
         [Tooltip("Radius for random wander destinations around spawn point.")]
         [SerializeField] private float patrolRadius = 10f;
 
-        [Tooltip("Seconds the zombie stands still before wandering.")]
+        [Tooltip("Seconds the zombie stands still BETWEEN patrol points (after reaching one).")]
         [SerializeField] private float idleWaitTime = 3f;
 
         [Header("Investigation")]
@@ -75,6 +91,7 @@ namespace ZombieAI
         private float attackTimer;
         private float idleTimer;
         private bool isIdleStanding;
+        private float pendingDamageTimer = -1f;
 
         // Origins
         private Vector3 spawnPosition;
@@ -82,16 +99,17 @@ namespace ZombieAI
         // Sound tracking
         private Vector3 lastHeardPosition;
         private bool hasSoundTarget;
-        private int soundsHeardRecently;        // multiple sounds = more aggressive
-        private float soundMemoryTimer;          // resets sound count after silence
+        private int soundsHeardRecently;
+        private float soundMemoryTimer;
         private const float SoundMemoryDuration = 4f;
 
         // Search
         private int searchPointsVisited;
         private const int MaxSearchPoints = 4;
 
-        // Events (hook audio / VFX here)
+        // Events
         public System.Action<ZombieState, ZombieState> OnStateChanged;
+        public System.Action OnAttackPerformed;
 
         // ───────────────────────── Unity Lifecycle ──────────────────────────
 
@@ -121,7 +139,6 @@ namespace ZombieAI
                 }
             }
 
-            // Verify NavMesh
             if (!NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5f, NavMesh.AllAreas))
             {
                 Debug.LogError($"[ZombieAI] {gameObject.name} is NOT on a NavMesh! Add NavMeshSurface and Bake.", this);
@@ -137,8 +154,7 @@ namespace ZombieAI
         private void Update()
         {
             // 1. RUBBER BAND CHECK
-            // If the player exists, calculate how far away we are
-            if (player != null) 
+            if (player != null)
             {
                 float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
@@ -148,20 +164,31 @@ namespace ZombieAI
                     if (agent != null)
                     {
                         agent.Warp(newCatchUpSpot);
-
                         Debug.LogWarning("RUBBER BAND TRIGGERED: Zombie teleported because it was " + distanceToPlayer + "m away!");
                     }
                 }
             }
 
             // 2. SAFETY CHECK
-            // If we just teleported or spawned, wait a frame for Unity to put us on the NavMesh
             if (agent == null || !agent.isOnNavMesh) return;
 
             // 3. TIMERS
             attackTimer -= Time.deltaTime;
 
-            // Decay sound memory over time (zombie forgets if no new sounds)
+            // Pending damage countdown — when it hits 0, the kick "lands"
+            if (pendingDamageTimer > 0f)
+            {
+                pendingDamageTimer -= Time.deltaTime;
+                if (pendingDamageTimer <= 0f)
+                {
+                    pendingDamageTimer = -1f;
+                    if (CurrentState == ZombieState.Attack)
+                    {
+                        ApplyDamageToPlayer();
+                    }
+                }
+            }
+
             if (soundsHeardRecently > 0)
             {
                 soundMemoryTimer -= Time.deltaTime;
@@ -170,11 +197,15 @@ namespace ZombieAI
             }
 
             // 4. BUMP DETECTION
-            // Check bump proximity in every state (blind zombie walks into player)
             if (player != null && CurrentState != ZombieState.Attack)
             {
                 float distToPlayer = Vector3.Distance(transform.position, player.position);
-                if (distToPlayer <= bumpDetectRange)
+
+                float effectiveBumpRange = (CurrentState == ZombieState.Idle)
+                    ? idleBumpDetectRange
+                    : bumpDetectRange;
+
+                if (distToPlayer <= effectiveBumpRange)
                 {
                     TransitionTo(ZombieState.Attack);
                     return;
@@ -218,9 +249,8 @@ namespace ZombieAI
             {
                 case ZombieState.Idle:
                     agent.speed = baseSpeed;
-                    idleTimer = idleWaitTime;
-                    isIdleStanding = true;
-                    agent.ResetPath();
+                    isIdleStanding = false;
+                    SetRandomPatrolPoint();
                     break;
 
                 case ZombieState.InvestigateSound:
@@ -242,6 +272,7 @@ namespace ZombieAI
                     break;
 
                 case ZombieState.Attack:
+                    attackTimer = 0f;
                     agent.speed = 0f;
                     agent.ResetPath();
                     break;
@@ -254,22 +285,23 @@ namespace ZombieAI
             {
                 hasSoundTarget = false;
             }
+
+            if (state == ZombieState.Attack)
+            {
+                pendingDamageTimer = -1f;
+            }
         }
 
         // ───────────────────────── State Updates ────────────────────────────
 
-        // ── IDLE / PATROL ──
-        // Zombie wanders aimlessly. Only reacts to sounds.
         private void UpdateIdle()
         {
-            // Sound heard → Investigate
             if (hasSoundTarget)
             {
                 TransitionTo(ZombieState.InvestigateSound);
                 return;
             }
 
-            // Stand still phase
             if (isIdleStanding)
             {
                 idleTimer -= Time.deltaTime;
@@ -281,7 +313,12 @@ namespace ZombieAI
                 return;
             }
 
-            // Walking to patrol point → arrived → stand still again
+            if (!agent.hasPath && !agent.pathPending)
+            {
+                SetRandomPatrolPoint();
+                return;
+            }
+
             if (!agent.pathPending && agent.remainingDistance < 0.5f)
             {
                 isIdleStanding = true;
@@ -290,38 +327,25 @@ namespace ZombieAI
             }
         }
 
-        // ── INVESTIGATE SOUND ──
-        // Zombie heard something. Moves to the sound location.
         private void UpdateInvestigate()
         {
             stateTimer += Time.deltaTime;
 
-            // Arrived at sound source or timed out
             bool arrived = !agent.pathPending && agent.remainingDistance < 1.5f;
             if (arrived || stateTimer >= investigateTimeout)
             {
-                // Multiple sounds heard recently → escalate to Chase
                 if (soundsHeardRecently >= 2)
-                {
                     TransitionTo(ZombieState.Chase);
-                }
                 else
-                {
-                    // Just one sound → search around the area then give up
                     TransitionTo(ZombieState.SearchArea);
-                }
                 return;
             }
         }
 
-        // ── CHASE ──
-        // Zombie heard repeated sounds — aggressively rushes toward last heard position.
-        // Still BLIND — just running to where sounds came from.
         private void UpdateChase()
         {
             stateTimer += Time.deltaTime;
 
-            // New sound heard → update destination and reset timer
             if (hasSoundTarget)
             {
                 agent.SetDestination(lastHeardPosition);
@@ -329,7 +353,6 @@ namespace ZombieAI
                 hasSoundTarget = false;
             }
 
-            // Arrived at last sound position → Search the area
             bool arrived = !agent.pathPending && agent.remainingDistance < 1.5f;
             if (arrived)
             {
@@ -337,7 +360,6 @@ namespace ZombieAI
                 return;
             }
 
-            // No new sounds for too long → give up to Search
             if (stateTimer >= chaseTimeout)
             {
                 TransitionTo(ZombieState.SearchArea);
@@ -345,26 +367,21 @@ namespace ZombieAI
             }
         }
 
-        // ── SEARCH AREA ──
-        // Zombie looks around the last heard location randomly.
         private void UpdateSearch()
         {
             stateTimer += Time.deltaTime;
 
-            // New sound → go investigate
             if (hasSoundTarget)
             {
                 TransitionTo(ZombieState.InvestigateSound);
                 return;
             }
 
-            // Wander between random search points
             if (!agent.pathPending && agent.remainingDistance < 1f)
             {
                 searchPointsVisited++;
                 if (searchPointsVisited >= MaxSearchPoints || stateTimer >= searchDuration)
                 {
-                    // Give Up → return to Idle
                     TransitionTo(ZombieState.Idle);
                     return;
                 }
@@ -372,49 +389,53 @@ namespace ZombieAI
             }
         }
 
-        // ── ATTACK ──
-        // Zombie bumped into the player. Melee attack.
         private void UpdateAttack()
         {
             if (player == null) return;
 
             float distToPlayer = Vector3.Distance(transform.position, player.position);
 
-            // Face the player
             Vector3 lookDir = (player.position - transform.position).normalized;
             lookDir.y = 0f;
             if (lookDir != Vector3.zero)
+            {
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     Quaternion.LookRotation(lookDir),
-                    Time.deltaTime * 5f
+                    Time.deltaTime * 8f
                 );
+            }
 
-            // Player escaped attack range → escaping makes noise → Chase!
-            if (distToPlayer > attackRange * 1.3f)
+            if (distToPlayer > attackRange * 1.5f)
             {
-                lastHeardPosition = player.position;
-                hasSoundTarget = true;
-                soundsHeardRecently = 3; // very aggressive
-                soundMemoryTimer = SoundMemoryDuration;
+                lastHeardPosition   = player.position;
+                hasSoundTarget      = true;
+                soundsHeardRecently = 3;
+                soundMemoryTimer    = SoundMemoryDuration;
                 TransitionTo(ZombieState.Chase);
                 return;
             }
 
-            // Attack on cooldown
-            if (attackTimer <= 0f)
+            if (distToPlayer > attackRange)
             {
-                PerformAttack();
-                attackTimer = attackCooldown;
+                agent.speed = baseSpeed * 0.5f;
+                agent.SetDestination(player.position);
+            }
+            else
+            {
+                agent.speed = 0f;
+                if (agent.hasPath) agent.ResetPath();
+
+                if (attackTimer <= 0f)
+                {
+                    PerformAttack();
+                    attackTimer = attackCooldown;
+                }
             }
         }
 
-        // ───────────────────────── Hearing (Only Sense) ─────────────────────
+        // ───────────────────────── Hearing ──────────────────────────────────
 
-        /// <summary>
-        /// Call from SoundEmitter when the player makes noise.
-        /// Loudness multiplies hearing range (1.0 = normal, 0.3 = quiet, 2.0 = loud).
-        /// </summary>
         public void HearSound(Vector3 position, float loudness = 1f)
         {
             float dist = Vector3.Distance(transform.position, position);
@@ -423,7 +444,6 @@ namespace ZombieAI
             lastHeardPosition = position;
             hasSoundTarget = true;
 
-            // Track recent sounds (more sounds = more aggressive)
             soundsHeardRecently++;
             soundMemoryTimer = SoundMemoryDuration;
 
@@ -434,22 +454,18 @@ namespace ZombieAI
                     break;
 
                 case ZombieState.InvestigateSound:
-                    // Redirect to new sound
                     agent.SetDestination(lastHeardPosition);
                     stateTimer = 0f;
                     break;
 
                 case ZombieState.SearchArea:
-                    // Heard sound while searching → investigate
                     TransitionTo(ZombieState.InvestigateSound);
                     break;
 
                 case ZombieState.Chase:
-                    // Update target (UpdateChase reads the flag)
                     break;
 
                 case ZombieState.Attack:
-                    // Already attacking, ignore
                     break;
             }
         }
@@ -458,30 +474,93 @@ namespace ZombieAI
 
         private void PerformAttack()
         {
-            if (player != null && player.TryGetComponent(out PlayerHealth health))
+            OnAttackPerformed?.Invoke();
+
+            if (useAnimationEventForDamage)
+            {
+                // Wait for AnimationEvent_DealDamage to fire
+            }
+            else
+            {
+                pendingDamageTimer = attackWindupTime;
+            }
+
+            #if UNITY_EDITOR
+            Debug.Log($"[ZombieAI] {gameObject.name} starts kick — damage in {attackWindupTime}s");
+            #endif
+        }
+
+        /// <summary>
+        /// Called by an Animation Event on the kick-impact frame.
+        /// </summary>
+        public void AnimationEvent_DealDamage()
+        {
+            if (CurrentState != ZombieState.Attack) return;
+            ApplyDamageToPlayer();
+        }
+
+        // FIXED: now applies BOTH damage AND knockback at the impact moment.
+        private void ApplyDamageToPlayer()
+        {
+            if (player == null) return;
+
+            // Final range check — player may have escaped during the windup.
+            if (Vector3.Distance(transform.position, player.position) > attackRange * 1.2f)
+                return;
+
+            // Damage
+            if (player.TryGetComponent(out PlayerHealth health))
             {
                 health.TakeDamage(attackDamage);
             }
 
-            #if UNITY_EDITOR
-            Debug.Log($"[ZombieAI] {gameObject.name} attacks for {attackDamage} damage!");
-            #endif
+            // Knockback — push the player backwards from the zombie
+            ApplyKnockbackToPlayer();
         }
 
-        // ───────────────────────── Wave Scaling ─────────────────────────────────
+        // Pushes the player away from the zombie when the kick connects.
+        // Works with Rigidbody players OR custom players via the PlayerKnockback script.
+        private void ApplyKnockbackToPlayer()
+        {
+            if (player == null)
+            {
+                Debug.LogWarning("[ZombieAI] Knockback skipped — player reference is null!", this);
+                return;
+            }
 
-        
+            // Direction from zombie to player, flat (no vertical bias from height diff)
+            Vector3 horizontalDir = player.position - transform.position;
+            horizontalDir.y = 0f;
+            horizontalDir.Normalize();
+
+            // Combined force vector: horizontal push + small upward stagger
+            Vector3 force = horizontalDir * knockbackForce + Vector3.up * knockbackUpwardForce;
+
+            Debug.Log($"[ZombieAI] Firing knockback at '{player.name}'. Force: {force}");
+
+            // CASE 1: Rigidbody player → use physics impulse
+            if (player.TryGetComponent(out Rigidbody rb) && !rb.isKinematic)
+            {
+                rb.AddForce(force, ForceMode.Impulse);
+                Debug.Log("[ZombieAI] Used Rigidbody.AddForce path.");
+                return;
+            }
+
+            // CASE 2: Custom player → message any script with ApplyKnockback(Vector3).
+            // The PlayerKnockback script catches this.
+            player.SendMessage("ApplyKnockback", force, SendMessageOptions.DontRequireReceiver);
+            Debug.Log("[ZombieAI] Sent SendMessage path. If you don't see [PlayerKnockback] RECEIVED, the script isn't on the right GameObject.");
+        }
+
+        // ───────────────────────── Wave Scaling ─────────────────────────────
+
         public void ApplySpeedMultiplier(float multiplier)
         {
-            // multiply the base speed so we dont lose the buff when switching states
             baseSpeed = baseSpeed * multiplier;
-            
-            // update the agent immediately just in case
-            if (agent != null) 
+
+            if (agent != null)
             {
                 agent.speed = baseSpeed;
-                
-                // print the exact speed to the console so i know it works
                 Debug.Log("zombie spawned! base speed is now: " + agent.speed + " with a multiplier of: " + multiplier);
             }
         }
@@ -521,26 +600,24 @@ namespace ZombieAI
         {
             if (!showGizmos) return;
 
-            // Hearing range (yellow — the zombie's ONLY sense)
             Gizmos.color = new Color(1f, 0.9f, 0f, 0.15f);
             Gizmos.DrawWireSphere(transform.position, hearingRange);
             Gizmos.color = new Color(1f, 0.9f, 0f, 0.5f);
             Gizmos.DrawWireSphere(transform.position, hearingRange);
 
-            // Bump detection range (orange)
             Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
             Gizmos.DrawWireSphere(transform.position, bumpDetectRange);
 
-            // Attack range (red)
+            Gizmos.color = new Color(0.6f, 0.3f, 0f, 0.5f);
+            Gizmos.DrawWireSphere(transform.position, idleBumpDetectRange);
+
             Gizmos.color = new Color(1f, 0f, 0f, 0.4f);
             Gizmos.DrawWireSphere(transform.position, attackRange);
 
-            // Patrol radius (blue, from spawn)
             Vector3 origin = Application.isPlaying ? spawnPosition : transform.position;
             Gizmos.color = new Color(0.3f, 0.5f, 1f, 0.1f);
             Gizmos.DrawWireSphere(origin, patrolRadius);
 
-            // Last heard sound position (if active)
             if (Application.isPlaying && lastHeardPosition != Vector3.zero)
             {
                 Gizmos.color = Color.yellow;
@@ -548,7 +625,6 @@ namespace ZombieAI
                 Gizmos.DrawLine(transform.position + Vector3.up, lastHeardPosition + Vector3.up * 0.5f);
             }
 
-            // State label
             UnityEditor.Handles.Label(
                 transform.position + Vector3.up * 2.5f,
                 $"State: {CurrentState}" +
