@@ -1924,7 +1924,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Return
+  m_text: Play
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2561,8 +2561,9 @@ GameObject:
   - component: {fileID: 664094098}
   - component: {fileID: 664094100}
   - component: {fileID: 664094099}
+  - component: {fileID: 664094101}
   m_Layer: 5
-  m_Name: ButtonReturnMain (1)
+  m_Name: HighScore
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2630,6 +2631,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 664094097}
   m_CullTransparentMesh: 1
+--- !u!114 &664094101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664094097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53a2924a01d30364cab4090bbb771137, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HighScoreUI
+  rowFormat: '{0}.  {1:N0}'
+  emptyPlaceholder: ---
+  highlightColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  highlightDuration: 1.5
 --- !u!1 &702948525
 GameObject:
   m_ObjectHideFlags: 0
@@ -2642,7 +2659,7 @@ GameObject:
   - component: {fileID: 702948528}
   - component: {fileID: 702948527}
   m_Layer: 5
-  m_Name: ButtonReturnMain
+  m_Name: CurrentScore
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7909,6 +7926,7 @@ GameObject:
   - component: {fileID: 942101217}
   - component: {fileID: 942101219}
   - component: {fileID: 942101218}
+  - component: {fileID: 942101220}
   m_Layer: 5
   m_Name: HighScorePanel
   m_TagString: Untagged
@@ -7978,6 +7996,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 942101216}
   m_CullTransparentMesh: 1
+--- !u!114 &942101220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 942101216}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28b388ae88dc2a34ab692a4eeff6471f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideOnStart
 --- !u!1001 &1084809385
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10187,8 +10217,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExtractionPoint
   playerTag: Player
   requireCureComplete: 1
-  loadSceneOnExtract: 1
-  sceneToLoad: GameOver
+  highScorePanelRoot: {fileID: 942101216}
+  highScoreUI: {fileID: 664094101}
+  currentScoreText: {fileID: 2143470797}
 --- !u!65 &1729969558
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -10611,6 +10642,8 @@ GameObject:
   - component: {fileID: 1781033889}
   - component: {fileID: 1781033890}
   - component: {fileID: 1781033887}
+  - component: {fileID: 1781033891}
+  - component: {fileID: 1781033892}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -10681,6 +10714,7 @@ MonoBehaviour:
   scorePerKill: 100
   speedBoostPerTier: 0.25
   zombiesAlive: 0
+  currentScore: 0
 --- !u!114 &1781033887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10741,6 +10775,39 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnableOnCureComplete
   helipadParent: {fileID: 412782395}
+--- !u!114 &1781033891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1781033883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f724c6eb2a03f9641b755d3844659b65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HighScoreManager
+  maxScores: 5
+  OnScoreSubmitted:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &1781033892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1781033883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d707ffa2612742439e70439cfa501ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExtractionPoint
+  playerTag: Player
+  requireCureComplete: 1
+  highScorePanelRoot: {fileID: 942101216}
+  highScoreUI: {fileID: 664094101}
+  currentScoreText: {fileID: 2143470797}
 --- !u!1 &1785643255
 GameObject:
   m_ObjectHideFlags: 0
@@ -10972,7 +11039,7 @@ GameObject:
   - component: {fileID: 1812672791}
   - component: {fileID: 1812672790}
   m_Layer: 5
-  m_Name: ButtonClose
+  m_Name: ButtonPlay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11044,7 +11111,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1781033884}
         m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
-        m_MethodName: ResumeGame
+        m_MethodName: RestartGame
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12577,7 +12644,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Main Menu
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -12604,7 +12671,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42
+  m_fontSize: 24
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
