@@ -123,13 +123,13 @@ public class PauseMenu : MonoBehaviour
         if (pauseMenuUI != null) return;
         if (string.IsNullOrEmpty(pauseMenuUIName)) return;
 
-        // Find by name — works even on inactive objects via tag-style search
-        // through the scene root objects.
-        var found = GameObject.Find(pauseMenuUIName);
+        // transform.Find looks at children and DOES find inactive objects
+        Transform found = transform.Find(pauseMenuUIName);
+
         if (found != null)
         {
-            pauseMenuUI = found;
-            Debug.Log($"[PauseMenu] Auto-recovered pauseMenuUI reference from scene.");
+            pauseMenuUI = found.gameObject;
+            Debug.Log($"[PauseMenu] Auto-recovered pauseMenuUI reference from children.");
         }
     }
 }

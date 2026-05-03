@@ -7,7 +7,17 @@ public class GameOverManager : MonoBehaviour
 
     private void Start()
     {
-        PlayerHealth.Instance.onDeath.AddListener(TriggerGameOver);
+        // Add the listener
+        if (PlayerHealth.Instance != null)
+            PlayerHealth.Instance.onDeath.AddListener(TriggerGameOver);
+    }
+
+    // ADD THIS METHOD:
+    private void OnDestroy()
+    {
+        // Remove the listener so it doesn't cause errors after scene reloads
+        if (PlayerHealth.Instance != null)
+            PlayerHealth.Instance.onDeath.RemoveListener(TriggerGameOver);
     }
 
     private void TriggerGameOver()
@@ -17,7 +27,9 @@ public class GameOverManager : MonoBehaviour
 
     private void LoadGameOverScene()
     {
-        // Enable cursor for menu scenes
+        // Unfreeze time just in case the player died while time was slowed/stopped
+        Time.timeScale = 1f;
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 

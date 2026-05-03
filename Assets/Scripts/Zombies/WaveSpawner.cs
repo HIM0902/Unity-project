@@ -8,7 +8,7 @@ public class WaveSpawner : MonoBehaviour
     // This makes the Spawner a "Singleton" so zombies can talk to it easily
     public static WaveSpawner Instance;
 
-    private void Awake()
+    void Awake()
     {
         Instance = this;
     }
