@@ -161,23 +161,34 @@ public class WaveSpawner : MonoBehaviour
 
     public Vector3 GetDynamicSpawnPosition()
     {
-        // 1. Pick a completely random direction (X and Z axis)
-        Vector2 randomDirection = Random.insideUnitCircle.normalized;
-        
-        // 2. Pick a random distance between your min and max limits
-        float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
-        
-        // 3. Calculate the exact 3D point around the player
-        Vector3 spawnPoint = player.position + new Vector3(randomDirection.x, 0, randomDirection.y) * randomDistance;
-
-        // 4. Ask the NavMesh to snap this point to the nearest valid ground
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(spawnPoint, out hit, 5.0f, NavMesh.AllAreas))
+        int maxAttempts = 30; // We will give the game 30 tries to find a valid spot
+
+        for (int i = 0; i < maxAttempts; i++)
         {
-            return hit.position; // Perfect valid spot!
+            // 1. Pick a completely random direction and distance
+            Vector2 randomDirection = Random.insideUnitCircle.normalized;
+            float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
+
+            // 2. Calculate the exact 3D point around the player
+            Vector3 randomPoint = player.position + new Vector3(randomDirection.x, 0, randomDirection.y) * randomDistance;
+
+            // 3. Ask the NavMesh to check if this point is actually on the walkable floor
+            // We use a small search radius (2.0f) so it doesn't snap through walls
+            if (NavMesh.SamplePosition(randomPoint, out hit, 2.0f, NavMesh.AllAreas))
+            {
+                return hit.position; // Perfect valid spot found!
+            }
         }
 
-        // Failsafe: If the math somehow picks the sky or the void, just spawn them near the player
-        return player.position + (Vector3.forward * minSpawnDistance);
+        // 4. ABSOLUTE FAILSAFE: If it fails 30 times (e.g. the player is backed into a tight corner),
+        // we use the player's exact position because we KNOW the player is standing on the NavMesh.
+        if (NavMesh.SamplePosition(player.position, out hit, 5.0f, NavMesh.AllAreas))
+        {
+            Debug.LogWarning("Spawning exactly on player to avoid NavMesh crash!");
+            return hit.position;
+        }
+
+        return player.position;
     }
 }

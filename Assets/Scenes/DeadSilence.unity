@@ -10677,6 +10677,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenu
   pauseMenuUI: {fileID: 860705733}
+  pauseMenuUIName: PauseMenuUI
 --- !u!4 &1781033885
 Transform:
   m_ObjectHideFlags: 0
