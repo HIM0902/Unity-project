@@ -13,14 +13,22 @@ public class Gun : MonoBehaviour
     [Range(0f, 1f)] public float volumeOverride = 1f;
     public GameObject muzzleFlashOverride;
 
+    // ─── NEW: Reload audio ─────────────────────────────────────────
+    [Header("Reload")]
+    [Tooltip("Sound played when the player starts reloading. Optional but recommended.")]
+    public AudioClip reloadSound;
+
+    [Tooltip("Volume for the reload sound.")]
+    [Range(0f, 1f)] public float reloadVolume = 1f;
+
+    [Tooltip("Key the player presses to manually reload.")]
+    public KeyCode reloadKey = KeyCode.R;
+    // ───────────────────────────────────────────────────────────────
+
     private AudioSource audioSource;
     private float nextFireTime = 0f;
     private int currentAmmo;
     private bool isReloading = false;
-
-    // FIXED: track whether the gun is properly configured.
-    // If weaponData is missing, we log ONCE and disable updates instead of
-    // spamming a NullReferenceException every frame.
     private bool isConfigured = false;
 
     void Start()
@@ -35,14 +43,11 @@ public class Gun : MonoBehaviour
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
 
-        // FIXED: guard against missing WeaponData.
         if (weaponData == null)
         {
-            Debug.LogError($"[Gun] '{gameObject.name}' has no WeaponData assigned! " +
-                           "Disabling gun. Drag a WeaponData asset into the inspector, " +
-                           "or check whether this gun was instantiated at runtime without one.", this);
+            Debug.LogError($"[Gun] '{gameObject.name}' has no WeaponData assigned! Disabling gun.", this);
             isConfigured = false;
-            enabled = false;     // stop Update() from running
+            enabled = false;
             return;
         }
 
@@ -72,7 +77,18 @@ public class Gun : MonoBehaviour
         if (!isConfigured) return;
         if (isReloading) return;
 
-        if (currentAmmo <= 0 || Input.GetKeyDown(KeyCode.R))
+        // FIXED: split auto-reload (when empty) from manual reload (R key)
+        // and ignore manual reload if mag is already full — feels more natural.
+
+        // Auto-reload when empty
+        if (currentAmmo <= 0)
+        {
+            StartCoroutine(Reload());
+            return;
+        }
+
+        // Manual reload — only if mag isn't already full
+        if (Input.GetKeyDown(reloadKey) && currentAmmo < weaponData.maxAmmo)
         {
             StartCoroutine(Reload());
             return;
@@ -90,10 +106,8 @@ public class Gun : MonoBehaviour
         currentAmmo--;
         UpdateHUDAmmo();
 
-        // ALERT ZOMBIES — gunshot is loud!
         SoundEmitter.EmitSound(transform.position, 2.5f);
 
-        // Use override if set, otherwise fall back to WeaponData
         GameObject flashPrefab = muzzleFlashOverride != null ? muzzleFlashOverride : weaponData.muzzleFlashPrefab;
         AudioClip sound = shootSoundOverride != null ? shootSoundOverride : weaponData.shootSound;
         float volume = volumeOverride > 0 ? volumeOverride : weaponData.volume;
@@ -141,8 +155,6 @@ public class Gun : MonoBehaviour
 
     System.Collections.IEnumerator Reload()
     {
-        // FIXED: extra safety inside coroutine — if data was lost mid-game,
-        // we bail cleanly instead of NRE'ing inside the yield.
         if (weaponData == null)
         {
             isReloading = false;
@@ -154,9 +166,14 @@ public class Gun : MonoBehaviour
 
         if (HUDManager.Instance != null) HUDManager.Instance.ShowReloading();
 
+        // NEW: play the reload sound at the START of the reload
+        if (reloadSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(reloadSound, reloadVolume);
+        }
+
         yield return new WaitForSeconds(weaponData.reloadTime);
 
-        // Defensive: object may have been destroyed during the wait
         if (this == null || weaponData == null) yield break;
 
         currentAmmo = weaponData.maxAmmo;

@@ -11692,9 +11692,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 0e7131f1ea33d9646b0b5a0201f8b55c, type: 2}
     - target: {fileID: 5541113855996100512, guid: 91ae9411a4d02cf41964a3f538884b64, type: 3}
+      propertyPath: reloadSound
+      value: 
+      objectReference: {fileID: 8300000, guid: e5198250a6a57408bb36e14bc4a322c4, type: 3}
+    - target: {fileID: 5541113855996100512, guid: 91ae9411a4d02cf41964a3f538884b64, type: 3}
       propertyPath: bulletPrefab
       value: 
       objectReference: {fileID: 1316381993093025042, guid: ff94fe091c88f6e44a6c93959e1572f0, type: 3}
+    - target: {fileID: 5541113855996100512, guid: 91ae9411a4d02cf41964a3f538884b64, type: 3}
+      propertyPath: reloadVolume
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5365236029103362316, guid: 91ae9411a4d02cf41964a3f538884b64, type: 3}
     m_RemovedGameObjects: []
