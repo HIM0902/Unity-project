@@ -33,7 +33,7 @@ public class CureUI : MonoBehaviour
         int total = CureManager.Instance.TotalParts;
 
         if (CureManager.Instance.IsCureComplete)
-            cureText.text = $"Cure:\n{total}/{total}\nCOMPLETE";
+            cureText.text = $"Extraction\nAvailable";
         else
             cureText.text = $"Cure:\n{current}/{total}";
     }
