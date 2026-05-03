@@ -181,4 +181,25 @@ public class HUDManager : MonoBehaviour
         gameObject.SetActive(false);
         Debug.Log("Player died — HUD hidden.");
     }
+
+    public void ShowKnifeMode()
+{
+    SetWeaponName("KNIFE");
+
+    if (ammoCurrentText != null) ammoCurrentText.gameObject.SetActive(false);
+    if (ammoReserveText != null) ammoReserveText.gameObject.SetActive(false);
+
+    // Hide reload/low-ammo warnings too — they don't apply to knife
+    if (reloadingTextObject != null) reloadingTextObject.SetActive(false);
+    if (lowAmmoWarning != null) lowAmmoWarning.SetActive(false);
+}
+
+public void ShowGunMode(string weaponName)
+{
+    SetWeaponName(weaponName);
+
+    if (ammoCurrentText != null) ammoCurrentText.gameObject.SetActive(true);
+    if (ammoReserveText != null) ammoReserveText.gameObject.SetActive(true);
+}
+
 }
