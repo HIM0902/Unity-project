@@ -5,11 +5,39 @@ public class PauseMenu : MonoBehaviour
 {
     [SerializeField] GameObject pauseMenuUI;
 
+    [Tooltip("If pauseMenuUI gets lost (e.g. after a scene reload), try to find a GameObject with this name in the scene. Leave default unless your panel has a different name.")]
+    [SerializeField] string pauseMenuUIName = "PauseMenuUI";
+
     bool isPaused = false;
+
+    // FIXED: re-find the UI reference whenever a scene loads, in case this
+    // PauseMenu is on a DontDestroyOnLoad object and survived the reload.
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Reset pause state every time a scene loads
+        isPaused = false;
+        Time.timeScale = 1f;
+
+        // If our reference died with the old scene, find the new panel
+        TryFindPauseMenuUI();
+
+        if (pauseMenuUI != null)
+            pauseMenuUI.SetActive(false);
+    }
 
     void Start()
     {
-        pauseMenuUI.SetActive(false);
+        TryFindPauseMenuUI();
         ResumeGame();
     }
 
@@ -18,18 +46,17 @@ public class PauseMenu : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (isPaused)
-            {
                 ResumeGame();
-            }
             else
-            {
                 PauseGame();
-            }
         }
     }
 
     public void PauseGame()
     {
+        // FIXED: null-safe so a missing/destroyed reference doesn't throw.
+        if (!EnsurePauseMenuUI()) return;
+
         pauseMenuUI.SetActive(true);
         Time.timeScale = 0f;
         isPaused = true;
@@ -40,7 +67,9 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
-        pauseMenuUI.SetActive(false);
+        if (EnsurePauseMenuUI())
+            pauseMenuUI.SetActive(false);
+
         Time.timeScale = 1f;
         isPaused = false;
 
@@ -51,6 +80,15 @@ public class PauseMenu : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        isPaused = false;
+
+        // Hide the menu BEFORE the scene unloads so we don't end up with
+        // a stale reference flicker.
+        if (EnsurePauseMenuUI())
+            pauseMenuUI.SetActive(false);
+
         SceneManager.LoadSceneAsync(0);
     }
 
@@ -63,5 +101,35 @@ public class PauseMenu : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    // Returns true if pauseMenuUI is currently usable.
+    // If it's been destroyed (Unity's "fake null"), tries to recover.
+    bool EnsurePauseMenuUI()
+    {
+        if (pauseMenuUI == null)
+            TryFindPauseMenuUI();
+
+        if (pauseMenuUI == null)
+        {
+            Debug.LogWarning($"[PauseMenu] pauseMenuUI is missing and could not be found by name '{pauseMenuUIName}'.", this);
+            return false;
+        }
+        return true;
+    }
+
+    void TryFindPauseMenuUI()
+    {
+        if (pauseMenuUI != null) return;
+        if (string.IsNullOrEmpty(pauseMenuUIName)) return;
+
+        // Find by name — works even on inactive objects via tag-style search
+        // through the scene root objects.
+        var found = GameObject.Find(pauseMenuUIName);
+        if (found != null)
+        {
+            pauseMenuUI = found;
+            Debug.Log($"[PauseMenu] Auto-recovered pauseMenuUI reference from scene.");
+        }
     }
 }

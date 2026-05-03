@@ -18,24 +18,58 @@ public class Gun : MonoBehaviour
     private int currentAmmo;
     private bool isReloading = false;
 
+    // FIXED: track whether the gun is properly configured.
+    // If weaponData is missing, we log ONCE and disable updates instead of
+    // spamming a NullReferenceException every frame.
+    private bool isConfigured = false;
+
     void Start()
     {
         if (fpsCamera == null)
             fpsCamera = Camera.main;
 
         if (fpsCamera == null)
-            Debug.LogError("No camera found! Tag your camera as MainCamera.");
+            Debug.LogError("[Gun] No camera found! Tag your camera as MainCamera.", this);
 
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
 
+        // FIXED: guard against missing WeaponData.
+        if (weaponData == null)
+        {
+            Debug.LogError($"[Gun] '{gameObject.name}' has no WeaponData assigned! " +
+                           "Disabling gun. Drag a WeaponData asset into the inspector, " +
+                           "or check whether this gun was instantiated at runtime without one.", this);
+            isConfigured = false;
+            enabled = false;     // stop Update() from running
+            return;
+        }
+
+        if (bulletPrefab == null)
+        {
+            Debug.LogError($"[Gun] '{gameObject.name}' has no Bullet Prefab assigned!", this);
+            isConfigured = false;
+            enabled = false;
+            return;
+        }
+
+        if (firePoint == null)
+        {
+            Debug.LogError($"[Gun] '{gameObject.name}' has no Fire Point assigned!", this);
+            isConfigured = false;
+            enabled = false;
+            return;
+        }
+
+        isConfigured = true;
         currentAmmo = weaponData.maxAmmo;
         UpdateHUDAmmo();
     }
 
     void Update()
     {
+        if (!isConfigured) return;
         if (isReloading) return;
 
         if (currentAmmo <= 0 || Input.GetKeyDown(KeyCode.R))
@@ -107,6 +141,14 @@ public class Gun : MonoBehaviour
 
     System.Collections.IEnumerator Reload()
     {
+        // FIXED: extra safety inside coroutine — if data was lost mid-game,
+        // we bail cleanly instead of NRE'ing inside the yield.
+        if (weaponData == null)
+        {
+            isReloading = false;
+            yield break;
+        }
+
         isReloading = true;
         Debug.Log("Reloading...");
 
@@ -114,19 +156,21 @@ public class Gun : MonoBehaviour
 
         yield return new WaitForSeconds(weaponData.reloadTime);
 
+        // Defensive: object may have been destroyed during the wait
+        if (this == null || weaponData == null) yield break;
+
         currentAmmo = weaponData.maxAmmo;
         isReloading = false;
-        
-        UpdateHUDAmmo(); // This automatically changes "RELOADING" back to numbers!
-        
+
+        UpdateHUDAmmo();
+
         Debug.Log("Reloaded!");
     }
 
     private void UpdateHUDAmmo()
     {
-        if (HUDManager.Instance != null)
+        if (HUDManager.Instance != null && weaponData != null)
         {
-            
             HUDManager.Instance.UpdateAmmoUI(currentAmmo, weaponData.maxAmmo);
         }
     }
