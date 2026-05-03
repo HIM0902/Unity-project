@@ -129,7 +129,7 @@ AudioSource:
   m_GameObject: {fileID: 1742400287947849862}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: c42f1e3b99be36648b49c5b35df680fd, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
@@ -978,7 +978,7 @@ MonoBehaviour:
   knockbackUpwardForce: 2
   attackSwingSound: {fileID: 8300000, guid: 1afac56027cbe61488feaf7a33cf464c, type: 3}
   attackImpactSound: {fileID: 8300000, guid: 790169d19c27c4dfb85796cf8a64d939, type: 3}
-  attackSoundVolume: 0.6
+  attackSoundVolume: 0.1
   attackPitchVariation: 0.1
   patrolRadius: 10
   idleWaitTime: 3
