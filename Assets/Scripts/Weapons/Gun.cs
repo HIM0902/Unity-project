@@ -13,17 +13,16 @@ public class Gun : MonoBehaviour
     [Range(0f, 1f)] public float volumeOverride = 1f;
     public GameObject muzzleFlashOverride;
 
-    // ─── NEW: Reload audio ─────────────────────────────────────────
     [Header("Reload")]
-    [Tooltip("Sound played when the player starts reloading. Optional but recommended.")]
+    [Tooltip("Sound played when reloading starts.")]
     public AudioClip reloadSound;
-
-    [Tooltip("Volume for the reload sound.")]
     [Range(0f, 1f)] public float reloadVolume = 1f;
-
     [Tooltip("Key the player presses to manually reload.")]
     public KeyCode reloadKey = KeyCode.R;
-    // ───────────────────────────────────────────────────────────────
+
+    [Header("Reload Animation")]
+    [Tooltip("Optional: drag the GunReloadAnimator component here, or leave empty to auto-find it on this object.")]
+    public GunReloadAnimator reloadAnimator;
 
     private AudioSource audioSource;
     private float nextFireTime = 0f;
@@ -33,15 +32,16 @@ public class Gun : MonoBehaviour
 
     void Start()
     {
-        if (fpsCamera == null)
-            fpsCamera = Camera.main;
-
-        if (fpsCamera == null)
-            Debug.LogError("[Gun] No camera found! Tag your camera as MainCamera.", this);
+        if (fpsCamera == null) fpsCamera = Camera.main;
+        if (fpsCamera == null) Debug.LogError("[Gun] No camera found! Tag your camera as MainCamera.", this);
 
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+
+        // NEW: auto-find reload animator
+        if (reloadAnimator == null)
+            reloadAnimator = GetComponent<GunReloadAnimator>();
 
         if (weaponData == null)
         {
@@ -77,17 +77,12 @@ public class Gun : MonoBehaviour
         if (!isConfigured) return;
         if (isReloading) return;
 
-        // FIXED: split auto-reload (when empty) from manual reload (R key)
-        // and ignore manual reload if mag is already full — feels more natural.
-
-        // Auto-reload when empty
         if (currentAmmo <= 0)
         {
             StartCoroutine(Reload());
             return;
         }
 
-        // Manual reload — only if mag isn't already full
         if (Input.GetKeyDown(reloadKey) && currentAmmo < weaponData.maxAmmo)
         {
             StartCoroutine(Reload());
@@ -166,11 +161,13 @@ public class Gun : MonoBehaviour
 
         if (HUDManager.Instance != null) HUDManager.Instance.ShowReloading();
 
-        // NEW: play the reload sound at the START of the reload
+        // NEW: kick off the procedural tilt animation
+        if (reloadAnimator != null)
+            reloadAnimator.PlayReload(weaponData.reloadTime);
+
+        // Reload sound
         if (reloadSound != null && audioSource != null)
-        {
             audioSource.PlayOneShot(reloadSound, reloadVolume);
-        }
 
         yield return new WaitForSeconds(weaponData.reloadTime);
 
@@ -180,7 +177,6 @@ public class Gun : MonoBehaviour
         isReloading = false;
 
         UpdateHUDAmmo();
-
         Debug.Log("Reloaded!");
     }
 
