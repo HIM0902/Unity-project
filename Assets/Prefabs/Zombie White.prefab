@@ -1041,9 +1041,9 @@ MonoBehaviour:
   knockbackForce: 8
   knockbackUpwardForce: 2
   attackSwingSound: {fileID: 8300000, guid: 1afac56027cbe61488feaf7a33cf464c, type: 3}
-  attackImpactSound: {fileID: 8300000, guid: 790169d19c27c4dfb85796cf8a64d939, type: 3}
-  attackSoundVolume: 0.1
-  attackPitchVariation: 0.003
+  attackImpactSound: {fileID: 8300000, guid: 259eebb023a7503469a02888d94c28dc, type: 3}
+  attackSoundVolume: 0.3
+  attackPitchVariation: 0.1
   patrolRadius: 10
   idleWaitTime: 3
   investigateTimeout: 6
