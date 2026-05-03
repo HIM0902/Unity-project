@@ -24,7 +24,7 @@ public class WaveSpawner : MonoBehaviour
     
     private int currentWave = 0;
     public int zombiesAlive = 0; 
-    private int currentScore = 0; // NEW: Tracks the player's total score
+    public int currentScore = 0; // NEW: Tracks the player's total score
     private bool isSpawning = false;
 
     void Start()

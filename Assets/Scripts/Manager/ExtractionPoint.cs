@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using TMPro;
 
 public class ExtractionPoint : MonoBehaviour
 {
@@ -8,17 +8,18 @@ public class ExtractionPoint : MonoBehaviour
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private bool requireCureComplete = true;
 
-    [Header("What happens on extract")]
-    [SerializeField] private bool loadSceneOnExtract = true;
-    [SerializeField] private string sceneToLoad = "GameOver";
-
     [Header("High Score Panel")]
-    [Tooltip("Assign the GameObject that has HighScoreUI on it. " +
-             "It starts hidden and is shown here after the score is saved.")]
-    [SerializeField] private HighScoreUI highScorePanel;
+    [Tooltip("The root HighScorePanel GameObject — this is what gets shown/hidden.")]
+    [SerializeField] private GameObject highScorePanelRoot;
+
+    [Tooltip("The HighScoreUI component sitting on the HighScore child GameObject.")]
+    [SerializeField] private HighScoreUI highScoreUI;
+
+    [Tooltip("The CurrentScore TMP text in the panel.")]
+    [SerializeField] private TextMeshProUGUI currentScoreText;
 
     private bool extractionEnabled = false;
-    private bool hasExtracted      = false; // prevent double-trigger
+    private bool hasExtracted      = false;
 
     // -----------------------------------------------------------------------
     // Unity lifecycle
@@ -44,6 +45,21 @@ public class ExtractionPoint : MonoBehaviour
     }
 
     // -----------------------------------------------------------------------
+    // Update — debug shortcut
+    // -----------------------------------------------------------------------
+
+    private void Update()
+    {
+        // Press F10 to instantly trigger extraction (REMOVE BEFORE RELEASE)
+        if (Input.GetKeyDown(KeyCode.F10))
+        {
+            Debug.Log("DEBUG: Forced extraction via F10.");
+            extractionEnabled = true;
+            TriggerExtraction();
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Extraction logic
     // -----------------------------------------------------------------------
 
@@ -57,42 +73,39 @@ public class ExtractionPoint : MonoBehaviour
     {
         if (!extractionEnabled) return;
         if (!other.CompareTag(playerTag)) return;
-        if (hasExtracted) return; // safety guard against repeated triggers
+        if (hasExtracted) return;
 
+        TriggerExtraction();
+    }
+
+    private void TriggerExtraction()
+    {
+        if (hasExtracted) return;
         hasExtracted = true;
         Debug.Log("Player extracted!");
+        Time.timeScale = 0f;
 
         // 1. Save the score and get the rank it landed at
         int rank = RecordScore();
 
-        // 2. Show the high score panel with that rank highlighted
-        if (highScorePanel != null)
-        {
-            highScorePanel.Show(rank);
-        }
+        // 2. Display the current run's score at the top of the panel
+        if (currentScoreText != null)
+            currentScoreText.text = "Current Score: " + GetCurrentScore();
+
+        // 3. Show the root panel then tell HighScoreUI to populate and highlight
+        if (highScorePanelRoot != null)
+            highScorePanelRoot.SetActive(true);
+
+        if (highScoreUI != null)
+            highScoreUI.Show(rank);
         else
-        {
             Debug.LogWarning("ExtractionPoint: No HighScoreUI assigned – skipping panel.");
-
-            // Fall through to scene load if there's no panel to show
-            if (loadSceneOnExtract)
-                SceneManager.LoadScene(sceneToLoad);
-        }
-
-        // If you want the scene to load AFTER the player dismisses the panel,
-        // add a "Continue" button that calls SceneManager.LoadScene(sceneToLoad).
-        // If you want it to load automatically regardless, uncomment below:
-        // if (loadSceneOnExtract) SceneManager.LoadScene(sceneToLoad);
     }
 
     // -----------------------------------------------------------------------
     // Score recording
     // -----------------------------------------------------------------------
 
-    /// <summary>
-    /// Submits the current score to HighScoreManager.
-    /// Returns the 0-based rank it landed at, or -1 if it didn't make the board.
-    /// </summary>
     private int RecordScore()
     {
         if (HighScoreManager.Instance == null)
@@ -101,13 +114,8 @@ public class ExtractionPoint : MonoBehaviour
             return -1;
         }
 
-        // ── Replace the line below with your own score source ──────────────
-        // e.g.  int finalScore = ScoreManager.Instance.CurrentScore;
         int finalScore = GetCurrentScore();
-        // ───────────────────────────────────────────────────────────────────
 
-        // SubmitScore now returns the rank directly via the event,
-        // but we read it by checking where the score landed.
         bool madeBoard = HighScoreManager.Instance.SubmitScore(finalScore);
         int  rank      = madeBoard ? new List<int>(HighScoreManager.Instance.GetTopScores()).IndexOf(finalScore) : -1;
 
@@ -117,13 +125,14 @@ public class ExtractionPoint : MonoBehaviour
         return rank;
     }
 
-    /// <summary>
-    /// STUB – replace with your actual score retrieval.
-    /// e.g. return ScoreManager.Instance.CurrentScore;
-    /// </summary>
     private int GetCurrentScore()
     {
-        Debug.LogWarning("ExtractionPoint.GetCurrentScore() is a stub – returning 0. Wire it to your score system.");
-        return 0;
+        WaveSpawner spawner = FindObjectOfType<WaveSpawner>();
+        if (spawner == null)
+        {
+            Debug.LogWarning("ExtractionPoint: No WaveSpawner found in scene.");
+            return 0;
+        }
+        return spawner.currentScore;
     }
 }
