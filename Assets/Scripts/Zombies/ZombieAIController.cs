@@ -7,7 +7,9 @@ namespace ZombieAI
     public class ZombieAIController : MonoBehaviour
     {
         // ───────────────────────── Inspector Fields ─────────────────────────
-
+        [Header("Rubber Band System")]
+        public float maxLeashDistance = 45f; // If they get this far behind, teleport them
+        
         [Header("References")]
         [Tooltip("The player Transform. Auto-detected via 'Player' tag if left empty.")]
         public Transform player;
@@ -134,6 +136,29 @@ namespace ZombieAI
 
         private void Update()
         {
+            // 1. RUBBER BAND CHECK
+            // If the player exists, calculate how far away we are
+            if (player != null) 
+            {
+                float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+                if (distanceToPlayer > maxLeashDistance)
+                {
+                    Vector3 newCatchUpSpot = WaveSpawner.Instance.GetDynamicSpawnPosition();
+                    if (agent != null)
+                    {
+                        agent.Warp(newCatchUpSpot);
+
+                        Debug.LogWarning("RUBBER BAND TRIGGERED: Zombie teleported because it was " + distanceToPlayer + "m away!");
+                    }
+                }
+            }
+
+            // 2. SAFETY CHECK
+            // If we just teleported or spawned, wait a frame for Unity to put us on the NavMesh
+            if (agent == null || !agent.isOnNavMesh) return;
+
+            // 3. TIMERS
             attackTimer -= Time.deltaTime;
 
             // Decay sound memory over time (zombie forgets if no new sounds)
@@ -144,6 +169,7 @@ namespace ZombieAI
                     soundsHeardRecently = 0;
             }
 
+            // 4. BUMP DETECTION
             // Check bump proximity in every state (blind zombie walks into player)
             if (player != null && CurrentState != ZombieState.Attack)
             {
@@ -155,13 +181,14 @@ namespace ZombieAI
                 }
             }
 
+            // 5. STATE MACHINE
             switch (CurrentState)
             {
                 case ZombieState.Idle:              UpdateIdle(); break;
-                case ZombieState.InvestigateSound:   UpdateInvestigate(); break;
-                case ZombieState.Chase:              UpdateChase(); break;
-                case ZombieState.SearchArea:         UpdateSearch(); break;
-                case ZombieState.Attack:             UpdateAttack(); break;
+                case ZombieState.InvestigateSound:  UpdateInvestigate(); break;
+                case ZombieState.Chase:             UpdateChase(); break;
+                case ZombieState.SearchArea:        UpdateSearch(); break;
+                case ZombieState.Attack:            UpdateAttack(); break;
             }
         }
 
