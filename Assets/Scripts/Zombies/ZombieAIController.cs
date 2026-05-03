@@ -145,7 +145,7 @@ namespace ZombieAI
             }
 
             // Check bump proximity in every state (blind zombie walks into player)
-            if (player != null && CurrentState != ZombieState.Attack)
+            if (player != null && CurrentState != ZombieState.Attack && CurrentState != ZombieState.Dead)
             {
                 float distToPlayer = Vector3.Distance(transform.position, player.position);
                 if (distToPlayer <= bumpDetectRange)
@@ -157,17 +157,18 @@ namespace ZombieAI
 
             switch (CurrentState)
             {
-                case ZombieState.Idle:              UpdateIdle(); break;
-                case ZombieState.InvestigateSound:   UpdateInvestigate(); break;
-                case ZombieState.Chase:              UpdateChase(); break;
-                case ZombieState.SearchArea:         UpdateSearch(); break;
-                case ZombieState.Attack:             UpdateAttack(); break;
+                case ZombieState.Idle:             UpdateIdle(); break;
+                case ZombieState.InvestigateSound: UpdateInvestigate(); break;
+                case ZombieState.Chase:            UpdateChase(); break;
+                case ZombieState.SearchArea:       UpdateSearch(); break;
+                case ZombieState.Attack:           UpdateAttack(); break;
+                case ZombieState.Dead:             break;
             }
         }
 
         // ───────────────────────── State Transitions ────────────────────────
 
-        private void TransitionTo(ZombieState newState)
+        public void TransitionTo(ZombieState newState)
         {
             if (newState == CurrentState) return;
 
@@ -218,6 +219,11 @@ namespace ZombieAI
                     agent.speed = 0f;
                     agent.ResetPath();
                     break;
+
+                case ZombieState.Dead:
+                agent.speed = 0f;
+                agent.ResetPath();
+                break;
             }
         }
 

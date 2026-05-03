@@ -9,6 +9,7 @@ namespace ZombieAI
         InvestigateSound,
         Chase,
         SearchArea,
-        Attack
+        Attack,
+        Dead
     }
 }

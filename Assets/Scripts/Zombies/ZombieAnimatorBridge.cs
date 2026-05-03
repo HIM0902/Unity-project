@@ -11,11 +11,13 @@ namespace ZombieAI
         private Animator animator;
         private NavMeshAgent agent;
 
-        // Cached parameter hashes for performance
-        private static readonly int SpeedHash      = Animator.StringToHash("Speed");
-        private static readonly int IsAttackingHash = Animator.StringToHash("IsAttacking");
-        private static readonly int AttackHash      = Animator.StringToHash("Attack");
-        private static readonly int StateHash       = Animator.StringToHash("State");
+        private static readonly int SpeedHash        = Animator.StringToHash("Speed");
+        private static readonly int IsAttackingHash  = Animator.StringToHash("IsAttacking");
+        private static readonly int AttackHash       = Animator.StringToHash("Attack");
+        private static readonly int StateHash        = Animator.StringToHash("State");
+        private static readonly int IsDeadHash       = Animator.StringToHash("IsDead");
+        private static readonly int Hit1Hash         = Animator.StringToHash("Hit1");
+        private static readonly int Hit2Hash         = Animator.StringToHash("Hit2");
 
         private void Awake()
         {
@@ -38,13 +40,9 @@ namespace ZombieAI
         {
             float normalizedSpeed = 0f;
 
-            // If agent.speed is 0 (Attack state), don't divide.
             if (agent != null && agent.speed > 0.001f)
-            {
                 normalizedSpeed = agent.velocity.magnitude / agent.speed;
-            }
 
-            // Extra safety: if anything goes weird, force it back to 0.
             if (float.IsNaN(normalizedSpeed) || float.IsInfinity(normalizedSpeed))
                 normalizedSpeed = 0f;
 
@@ -55,11 +53,16 @@ namespace ZombieAI
         {
             animator.SetInteger(StateHash, (int)to);
             animator.SetBool(IsAttackingHash, to == ZombieState.Attack);
+            animator.SetBool(IsDeadHash, to == ZombieState.Dead);
 
             if (to == ZombieState.Attack)
-            {
                 animator.SetTrigger(AttackHash);
-            }
+        }
+
+        public void TriggerHit()
+        {
+            int hitHash = Random.Range(0, 2) == 0 ? Hit1Hash : Hit2Hash;
+            animator.SetTrigger(hitHash);
         }
     }
 }
