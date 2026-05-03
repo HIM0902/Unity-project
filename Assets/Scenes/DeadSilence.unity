@@ -653,7 +653,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 66f7f8d8f2fd849bb99708068367882b, type: 2}
   m_Color: {r: 0, g: 0, b: 0, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -2838,6 +2838,7 @@ GameObject:
   - component: {fileID: 860705734}
   - component: {fileID: 860705736}
   - component: {fileID: 860705735}
+  - component: {fileID: 860705737}
   m_Layer: 5
   m_Name: PauseMenuPanel
   m_TagString: Untagged
@@ -2906,6 +2907,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 860705733}
   m_CullTransparentMesh: 1
+--- !u!114 &860705737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 860705733}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28b388ae88dc2a34ab692a4eeff6471f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideOnStart
 --- !u!1 &890449950
 GameObject:
   m_ObjectHideFlags: 0
@@ -10150,7 +10163,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 100
   m_WholeNumbers: 0
-  m_Value: 100
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -12306,14 +12319,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126429178}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.0023920676, y: 0, z: -0, w: 0.99999714}
   m_LocalPosition: {x: 551.28, y: 10.13, z: 423.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 253115883}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.274, y: 0, z: 0}
 --- !u!114 &2126429180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12434,6 +12447,7 @@ MonoBehaviour:
   currentHealth: 0
   maxArmor: 100
   currentArmor: 0
+  armorAbsorption: 1
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -12606,6 +12620,7 @@ MonoBehaviour:
   decayRate: 5
   forceScale: 1
   horizontalOnly: 1
+  debugLogs: 1
 --- !u!1 &2143470795
 GameObject:
   m_ObjectHideFlags: 0
