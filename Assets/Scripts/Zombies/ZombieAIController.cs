@@ -54,8 +54,8 @@ namespace ZombieAI
         [SerializeField] private AudioClip attackImpactSound;
 
         [Tooltip("Volume of attack sounds.")]
-        [Range(0f, 1f)]
-        [SerializeField] private float attackSoundVolume = 1f;
+        [Range(0f, 0.3f)]
+        [SerializeField] private float attackSoundVolume = 0.3f;
 
         [Tooltip("Random pitch range for variety. 0 = no variation, 0.1 = subtle, 0.2 = noticeable.")]
         [Range(0f, 0.3f)]
