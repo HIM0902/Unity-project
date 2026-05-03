@@ -15,6 +15,29 @@ public class Movement : MonoBehaviour
     [Range(0, 10), SerializeField] float airControl = 5f;
     [SerializeField] float minimumAirTimeForLandSound = 0.15f;
 
+    [Header("Crouch")]
+    [Tooltip("Hold this key to crouch.")]
+    [SerializeField] KeyCode crouchKey = KeyCode.C;
+
+    [Tooltip("Speed while crouching.")]
+    [SerializeField] float crouchSpeed = 2f;
+
+    [Tooltip("Standing height of the CharacterController (cached from controller on Start).")]
+    [SerializeField] float standingHeight = 2f;
+
+    [Tooltip("Crouching height of the CharacterController.")]
+    [SerializeField] float crouchHeight = 1.2f;
+
+    [Tooltip("How quickly the controller changes height/center (bigger = faster).")]
+    [SerializeField] float crouchTransitionSpeed = 10f;
+
+    [Header("Head / Camera")]
+    [Tooltip("Drag your Head (camera) transform here. If left empty, we try to find a Camera child.")]
+    [SerializeField] Transform head;
+
+    [Tooltip("How far the camera should be lower when crouching.")]
+    [SerializeField] float crouchHeadOffset = 0.5f;
+
     [Header("Footsteps")]
     [SerializeField] float stepInterval = 2f;
     [SerializeField] AudioClip[] footstepSounds;
@@ -27,9 +50,22 @@ public class Movement : MonoBehaviour
 
     float stepCycle = 0f;
     float nextStep = 0f;
+
     bool previouslyGrounded;
     bool jumpPressed;
     float airTime = 0f;
+
+    public bool IsCrouching { get; private set; }
+    float standingCenterY;
+    float crouchCenterY;
+
+    // IMPORTANT: This is the crouch-adjusted base Y position for the head.
+    // MouseLook will read this and add headbob on top.
+    public float CurrentHeadBaseY { get; private set; }
+
+    Vector3 headStartLocalPos;
+
+    ZombieAI.SoundEmitter soundEmitter;
 
     public Vector3 CurrentVelocity { get; private set; }
     public bool IsMoving { get; private set; }
@@ -42,9 +78,29 @@ public class Movement : MonoBehaviour
         controller = GetComponent<CharacterController>();
         audioSource = GetComponent<AudioSource>();
 
+        soundEmitter = GetComponent<ZombieAI.SoundEmitter>();
+
+        if (head == null)
+        {
+            Camera cam = GetComponentInChildren<Camera>();
+            if (cam != null)
+                head = cam.transform;
+        }
+
+        if (head != null)
+        {
+            headStartLocalPos = head.localPosition;
+            CurrentHeadBaseY = headStartLocalPos.y;
+        }
+
         stepCycle = 0f;
         nextStep = stepInterval * 0.5f;
         previouslyGrounded = controller.isGrounded;
+
+        standingHeight = controller.height;
+        standingCenterY = controller.center.y;
+
+        crouchCenterY = standingCenterY - (standingHeight - crouchHeight) * 0.5f;
     }
 
     void Update()
@@ -59,9 +115,31 @@ public class Movement : MonoBehaviour
 
     void FixedUpdate()
     {
-        float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? runSpeed : walkSpeed;
-        IsRunning = Input.GetKey(KeyCode.LeftShift);
+        // 1) Crouch + Run logic
+        IsCrouching = Input.GetKey(crouchKey);
 
+        IsRunning = Input.GetKey(KeyCode.LeftShift) && !IsCrouching;
+
+        float currentSpeed;
+        if (IsCrouching)
+            currentSpeed = crouchSpeed;
+        else
+            currentSpeed = IsRunning ? runSpeed : walkSpeed;
+
+        if (soundEmitter != null)
+            soundEmitter.IsCrouching = IsCrouching;
+
+        // Smoothly change the CharacterController height/center
+        float targetHeight = IsCrouching ? crouchHeight : standingHeight;
+        float targetCenterY = IsCrouching ? crouchCenterY : standingCenterY;
+
+        controller.height = Mathf.Lerp(controller.height, targetHeight, crouchTransitionSpeed * Time.deltaTime);
+
+        Vector3 center = controller.center;
+        center.y = Mathf.Lerp(center.y, targetCenterY, crouchTransitionSpeed * Time.deltaTime);
+        controller.center = center;
+
+        // 2) Input
         var input = new Vector3(
             Input.GetAxis("Horizontal"),
             0,
@@ -69,17 +147,19 @@ public class Movement : MonoBehaviour
         );
 
         input = Vector3.ClampMagnitude(input, 1f);
+
         MoveAmount = input.magnitude;
         IsMoving = MoveAmount > 0.1f;
 
         input *= currentSpeed;
         input = transform.TransformDirection(input);
 
+        // 3) Ground / Air
         if (controller.isGrounded)
         {
             moveDirection = input;
 
-            if (jumpPressed)
+            if (jumpPressed && !IsCrouching)
             {
                 moveDirection.y = Mathf.Sqrt(2 * gravity * jumpHeight);
                 PlayJumpSound();
@@ -103,6 +183,19 @@ public class Movement : MonoBehaviour
         CurrentVelocity = controller.velocity;
 
         ProgressStepCycle(currentSpeed);
+    }
+
+    // Update the crouch-adjusted base head Y once per rendered frame.
+    // MouseLook will read this in Update and apply headbob on top.
+    void LateUpdate()
+    {
+        if (head == null) return;
+
+        float baseY = headStartLocalPos.y;
+        if (IsCrouching)
+            baseY = headStartLocalPos.y - crouchHeadOffset;
+
+        CurrentHeadBaseY = baseY;
     }
 
     void HandleLandingAndAirSounds()
@@ -134,9 +227,7 @@ public class Movement : MonoBehaviour
     void ProgressStepCycle(float speed)
     {
         if (!controller.isGrounded)
-        {
             return;
-        }
 
         if (controller.velocity.sqrMagnitude > 0.1f && IsMoving)
         {
@@ -152,37 +243,24 @@ public class Movement : MonoBehaviour
 
     void PlayFootstepAudio()
     {
-        if (!controller.isGrounded)
-        {
-            return;
-        }
-
-        if (footstepSounds == null || footstepSounds.Length == 0)
-        {
-            return;
-        }
+        if (!controller.isGrounded) return;
+        if (footstepSounds == null || footstepSounds.Length == 0) return;
 
         int soundIndex = Random.Range(0, footstepSounds.Length);
-        audioSource.PlayOneShot(footstepSounds[soundIndex]);
+
+        float volume = IsCrouching ? 0.25f : 1f;
+        audioSource.PlayOneShot(footstepSounds[soundIndex], volume);
     }
 
     void PlayJumpSound()
     {
-        if (jumpSound == null)
-        {
-            return;
-        }
-
+        if (jumpSound == null) return;
         audioSource.PlayOneShot(jumpSound);
     }
 
     void PlayLandSound()
     {
-        if (landSound == null)
-        {
-            return;
-        }
-
+        if (landSound == null) return;
         audioSource.PlayOneShot(landSound);
     }
 }

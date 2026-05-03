@@ -42,12 +42,12 @@ namespace ZombieAI
         // Runtime
         private Vector3 lastPosition;
         private float stepTimer;
+
+        // This is set by Movement.cs when crouching
         private bool isCrouching;
 
-        /// <summary>
         /// Set this from your player controller when crouching.
         /// Crouching makes footsteps nearly silent.
-        /// </summary>
         public bool IsCrouching
         {
             get => isCrouching;
@@ -63,19 +63,19 @@ namespace ZombieAI
         {
             if (mode != EmitterMode.PlayerFootsteps) return;
 
-            // Calculate movement speed
+            // Calculate movement speed using position delta
             Vector3 currentPos = transform.position;
             float speed = (currentPos - lastPosition).magnitude / Time.deltaTime;
             lastPosition = currentPos;
 
-            // Standing still → no sound at all
+            // Standing still → no sound
             if (speed < movementThreshold)
             {
                 stepTimer = 0f;
                 return;
             }
 
-            // Determine loudness and interval based on movement type
+            // Choose loudness and interval based on movement type
             float loudness;
             float interval;
 
@@ -104,34 +104,21 @@ namespace ZombieAI
             }
         }
 
-        /// <summary>
-        /// Emit a sound from this object. Hook to UnityEvents for doors, traps, radios.
-        /// </summary>
+        /// Emit a sound from this object with the default manual loudness.
+        /// Hook this to UnityEvents (doors, traps, radios, etc.).
         public void EmitFromThis()
         {
             EmitSound(transform.position, manualLoudness);
         }
 
-        /// <summary>
-        /// Emit a sound with custom loudness from this object.
-        /// </summary>
+        /// Emit a sound from this object with custom loudness.
         public void EmitFromThis(float loudness)
         {
             EmitSound(transform.position, loudness);
         }
 
-        /// <summary>
         /// STATIC — Broadcast a sound at a world position to ALL zombies.
         /// Call from anywhere: SoundEmitter.EmitSound(pos, loudness);
-        /// 
-        /// Loudness examples:
-        ///   0.1  = crouching footstep (almost silent)
-        ///   0.5  = walking footstep
-        ///   1.0  = normal sound (door, object drop)
-        ///   1.2  = running footstep
-        ///   2.0  = gunshot, explosion
-        ///   3.0  = extremely loud (car alarm, siren)
-        /// </summary>
         public static void EmitSound(Vector3 position, float loudness = 1f)
         {
             ZombieAIController[] zombies = Object.FindObjectsByType<ZombieAIController>(
@@ -143,10 +130,10 @@ namespace ZombieAI
                 zombie.HearSound(position, loudness);
             }
 
-            #if UNITY_EDITOR
-            // Draw debug sphere at sound position
+#if UNITY_EDITOR
+            // Debug ray at sound position
             Debug.DrawRay(position, Vector3.up * 2f, Color.yellow, 0.5f);
-            #endif
+#endif
         }
     }
 }

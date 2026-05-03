@@ -70,6 +70,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHealth: 100
+  bloodHitPrefab: {fileID: 21541557506291251, guid: 1a6b79adeb6d847a88c72342b5022e33, type: 3}
+  deathBloodPrefab: {fileID: 3329534176141858028, guid: 1a19dcb9e9a8b40bd9ed27ba09bc94c4, type: 3}
 --- !u!114 &2429029343127965186
 MonoBehaviour:
   m_ObjectHideFlags: 0
