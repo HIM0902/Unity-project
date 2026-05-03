@@ -840,6 +840,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1097971759}
+  - {fileID: 1923141117}
   m_Father: {fileID: 2126429179}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &253115884
@@ -2390,6 +2391,11 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1 &1142671345 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3254776784015681419, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+  m_PrefabInstance: {fileID: 2460430698652467604}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1159316502
 GameObject:
   m_ObjectHideFlags: 0
@@ -5083,6 +5089,36 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1911590575}
   m_CullTransparentMesh: 1
+--- !u!4 &1923141117 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+  m_PrefabInstance: {fileID: 2460430698652467604}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1923141120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1142671345}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ca435cbec679441caeebb8fcbd1fa73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KnifeAttack
+  playerCamera: {fileID: 253115882}
+  attackRange: 2
+  damage: 50
+  backstabDamage: 100
+  attackCooldown: 0.5
+  backstabAngle: 60
+  hitSound: {fileID: 8300000, guid: 3c80976120d0b4901b368ffe3a9bfd4a, type: 3}
+  missSound: {fileID: 8300000, guid: 5eedbc9ccff4245a492c75cc7f569fa5, type: 3}
+  backstabSound: {fileID: 8300000, guid: efde612e6225a490bad82bf8ddbd9bfc, type: 3}
+  hitVolume: 0.7
+  missVolume: 0.4
+  backstabVolume: 1
+  audioSource: {fileID: 0}
 --- !u!1001 &1939623802
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5486,6 +5522,7 @@ GameObject:
   - component: {fileID: 2126429183}
   - component: {fileID: 2126429187}
   - component: {fileID: 2126429185}
+  - component: {fileID: 2126429188}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -5772,6 +5809,84 @@ MonoBehaviour:
   crouchLoudness: 0.1
   movementThreshold: 0.2
   runSpeedThreshold: 5
+--- !u!114 &2126429188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2126429178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85af5aaed7df24861a6521dab08f5eb0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponSwitching
+  ak: {fileID: 1097971758}
+  knife: {fileID: 1142671345}
+--- !u!1001 &2460430698652467604
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 253115883}
+    m_Modifications:
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.18927002
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.27101135
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.62908936
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.76349455
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.2156715
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.42125195
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.43944144
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 44.392
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 39.414
+      objectReference: {fileID: 0}
+    - target: {fileID: 2765380118913301809, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -43.217
+      objectReference: {fileID: 0}
+    - target: {fileID: 3254776784015681419, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_Name
+      value: Knife
+      objectReference: {fileID: 0}
+    - target: {fileID: 4720052418664321885, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: a19eca838d3f34488a60a5181ce7c9c5, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3254776784015681419, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1923141120}
+  m_SourcePrefab: {fileID: 100100000, guid: fc2f8948cc04c48849b920e1be7e9420, type: 3}
 --- !u!1001 &6309245837395725935
 PrefabInstance:
   m_ObjectHideFlags: 0
