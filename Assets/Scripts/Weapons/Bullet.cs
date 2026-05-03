@@ -9,15 +9,21 @@ public class Bullet : MonoBehaviour
     {
         Destroy(gameObject, lifetime);
     }
+
     void OnCollisionEnter(Collision collision)
     {
         Debug.Log("Bullet hit: " + collision.gameObject.name);
-        
+
         Health health = collision.gameObject.GetComponentInParent<Health>();
+
         if (health != null)
+        {
             health.TakeDamage(damage);
+        }
         else
+        {
             Debug.Log("No Health component found on: " + collision.gameObject.name);
+        }
 
         Destroy(gameObject);
     }

@@ -3,6 +3,11 @@ using UnityEngine;
 public class Health : MonoBehaviour
 {
     public float maxHealth = 100f;
+
+    [Header("Blood Effects")]
+    public GameObject bloodHitPrefab;
+    public GameObject deathBloodPrefab;
+
     private float currentHealth;
     private bool isDead = false;
 
@@ -13,38 +18,55 @@ public class Health : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        // If the zombie is already dead, ignore any extra bullets!
         if (isDead) return;
+
+        SpawnHitBlood();
 
         currentHealth -= damage;
 
         if (currentHealth <= 0)
         {
-            // 1. Lock it! The zombie is now officially dead.
-            isDead = true;
+            Die();
+        }
+    }
 
-            // 2. Tell the spawner
-            WaveSpawner spawner = FindObjectOfType<WaveSpawner>();
-            if (spawner != null)
-            {
-                spawner.ZombieKilled();
-            }
-
-            // 3. Destroy the zombie (or play death animation)
-            Destroy(gameObject);
+    void SpawnHitBlood()
+    {
+        if (bloodHitPrefab != null)
+        {
+            Instantiate(
+                bloodHitPrefab,
+                transform.position + Vector3.up * 1.2f,
+                Quaternion.identity
+            );
+        }
+        else
+        {
+            Debug.LogWarning("Blood Hit Prefab is not assigned on " + gameObject.name);
         }
     }
 
     void Die()
     {
-        Debug.Log($"{gameObject.name} died.");
-        // Replace with your own death logic (animation, destroy, respawn, etc.)
+        if (isDead) return;
+
+        isDead = true;
+
+        if (deathBloodPrefab != null)
+        {
+            Instantiate(
+                deathBloodPrefab,
+                transform.position + Vector3.up,
+                Quaternion.identity
+            );
+        }
 
         WaveSpawner spawner = FindObjectOfType<WaveSpawner>();
         if (spawner != null)
         {
             spawner.ZombieKilled();
         }
+
         Destroy(gameObject);
     }
 }
