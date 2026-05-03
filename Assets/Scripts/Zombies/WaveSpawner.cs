@@ -5,6 +5,22 @@ using UnityEngine.AI;
 
 public class WaveSpawner : MonoBehaviour
 {
+    // This makes the Spawner a "Singleton" so zombies can talk to it easily
+    public static WaveSpawner Instance;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
+
+
+
+    [Header("Dynamic Spawning")]
+    public Transform player; // Drag your player character here in Unity
+    public float minSpawnDistance = 15f; // Don't spawn closer than this
+    public float maxSpawnDistance = 30f; // Don't spawn further than this
+    
     [Header("Wave Settings")]
     public GameObject[] zombiePrefabs;
     public Transform[] spawnPoints;
@@ -75,9 +91,9 @@ public class WaveSpawner : MonoBehaviour
 
     void SpawnZombie()
     {
-        if (spawnPoints.Length == 0 || zombiePrefabs.Length == 0) return;
+        // Safety check: Make sure we have prefabs and the player is assigned!
+        if (zombiePrefabs.Length == 0 || player == null) return;
 
-        Transform randomSpawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
         GameObject randomZombiePrefab = zombiePrefabs[Random.Range(0, zombiePrefabs.Length)];
 
         // --- THE SAFETY CHECK ---
@@ -88,32 +104,37 @@ public class WaveSpawner : MonoBehaviour
         }
         // ------------------------
 
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(randomSpawnPoint.position, out hit, 2.0f, NavMesh.AllAreas))
+        // --- DYNAMIC SPAWNING MATH ---
+        // Use our new method to find a valid spot on the NavMesh around the player
+        Vector3 finalSpawnPosition = GetDynamicSpawnPosition();
+
+        // Instantiate the zombie at the new dynamic position
+        GameObject spawnedZombie = Instantiate(randomZombiePrefab, finalSpawnPosition, Quaternion.identity);
+        
+        // Make the zombie look at the player immediately so they don't spawn facing a wall
+        spawnedZombie.transform.LookAt(new Vector3(player.position.x, spawnedZombie.transform.position.y, player.position.z));
+
+        // --- DYNAMIC DIFFICULTY & SPEED SCALING ---
+        int speedTier = currentWave / 5;
+        speedTier = Mathf.Clamp(speedTier, 0, 3); 
+        float currentSpeedMultiplier = 1f + (speedBoostPerTier * speedTier);
+
+        // --- THE FIX ---
+        // Use GetComponentInChildren just in case the script is hiding on a nested object
+        ZombieAI.ZombieAIController aiScript = spawnedZombie.GetComponentInChildren<ZombieAI.ZombieAIController>();
+        
+        if (aiScript != null)
         {
-            GameObject spawnedZombie = Instantiate(randomZombiePrefab, hit.position, randomSpawnPoint.rotation);
-
-            int speedTier = currentWave / 5;
-            speedTier = Mathf.Clamp(speedTier, 0, 3); 
-            float currentSpeedMultiplier = 1f + (speedBoostPerTier * speedTier);
-
-            // --- THE FIX ---
-            // Use GetComponentInChildren just in case the script is hiding on a nested object
-            ZombieAI.ZombieAIController aiScript = spawnedZombie.GetComponentInChildren<ZombieAI.ZombieAIController>();
-            
-            if (aiScript != null)
-            {
-                aiScript.ApplySpeedMultiplier(currentSpeedMultiplier);
-            }
-            else
-            {
-                // If it STILL can't find it, it will scream at you in red text
-                Debug.LogError("BROKEN LINK: The Spawner couldn't find the ZombieAIController on the prefab!");
-            }
-
-            zombiesAlive++;
-            UpdateUI();
+            aiScript.ApplySpeedMultiplier(currentSpeedMultiplier);
         }
+        else
+        {
+            // If it STILL can't find it, it will scream at you in red text
+            Debug.LogError("BROKEN LINK: The Spawner couldn't find the ZombieAIController on the prefab!");
+        }
+
+        zombiesAlive++;
+        UpdateUI();
     }
 
     // This is called by your Zombie script when it dies
@@ -136,5 +157,27 @@ public class WaveSpawner : MonoBehaviour
         {
             scoreTextUI.text = "Score: \n" + currentScore;
         }
+    }
+
+    public Vector3 GetDynamicSpawnPosition()
+    {
+        // 1. Pick a completely random direction (X and Z axis)
+        Vector2 randomDirection = Random.insideUnitCircle.normalized;
+        
+        // 2. Pick a random distance between your min and max limits
+        float randomDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
+        
+        // 3. Calculate the exact 3D point around the player
+        Vector3 spawnPoint = player.position + new Vector3(randomDirection.x, 0, randomDirection.y) * randomDistance;
+
+        // 4. Ask the NavMesh to snap this point to the nearest valid ground
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(spawnPoint, out hit, 5.0f, NavMesh.AllAreas))
+        {
+            return hit.position; // Perfect valid spot!
+        }
+
+        // Failsafe: If the math somehow picks the sky or the void, just spawn them near the player
+        return player.position + (Vector3.forward * minSpawnDistance);
     }
 }
