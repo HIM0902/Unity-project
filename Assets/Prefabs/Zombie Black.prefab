@@ -110,7 +110,7 @@ MonoBehaviour:
   lockPositionAfterDeath: 1
   deathSounds:
   - {fileID: 8300000, guid: a088754ba707d482dba64e7172ed2512, type: 3}
-  deathSoundVolume: 0.4
+  deathSoundVolume: 0.1
   deathPitchVariation: 0.1
 --- !u!114 &3991259072188509219
 MonoBehaviour:
@@ -997,7 +997,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 7bd8c81c1735343b8b844225351511e2, type: 3}
   idleMoanInterval: 8
   idleMoanIntervalVariance: 4
-  voiceVolume: 0.4
+  voiceVolume: 0.1
   patrolRadius: 10
   idleWaitTime: 3
   investigateTimeout: 6

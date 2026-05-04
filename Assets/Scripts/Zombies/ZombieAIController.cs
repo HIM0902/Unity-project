@@ -15,30 +15,17 @@ namespace ZombieAI
         public Transform player;
 
         [Header("Hearing (Only Sense)")]
-        [Tooltip("Max distance the zombie can hear sounds.")]
         [SerializeField] private float hearingRange = 30f;
 
         [Header("Proximity (Bumping Into Player)")]
-        [Tooltip("Distance at which an ALERTED zombie (Chase/Search/Investigate) attacks on contact.")]
         [SerializeField] private float bumpDetectRange = 2f;
-
-        [Tooltip("Distance at which an IDLE zombie attacks on PHYSICAL contact only.")]
         [SerializeField] private float idleBumpDetectRange = 0.8f;
 
         [Header("Combat")]
-        [Tooltip("Distance at which the zombie can melee the player.")]
         [SerializeField] private float attackRange = 2f;
-
-        [Tooltip("Damage dealt per attack.")]
         [SerializeField] private float attackDamage = 10f;
-
-        [Tooltip("Seconds between attacks (full swing-to-swing cycle).")]
         [SerializeField] private float attackCooldown = 1.5f;
-
-        [Tooltip("Seconds between starting the kick animation and the damage actually landing.")]
         [SerializeField] private float attackWindupTime = 0.4f;
-
-        [Tooltip("If TRUE, damage is applied via Animation Event ONLY. If FALSE, uses Attack Windup Time delay.")]
         [SerializeField] private bool useAnimationEventForDamage = false;
 
         [Header("Knockback (When Kick Lands)")]
@@ -46,36 +33,22 @@ namespace ZombieAI
         [SerializeField] private float knockbackUpwardForce = 2f;
 
         [Header("Audio — Attack")]
-        [Tooltip("Sound played when the zombie BEGINS the kick (whoosh / swing). Optional.")]
         [SerializeField] private AudioClip attackSwingSound;
-
-        [Tooltip("Sound played when the kick LANDS on the player (thump / punch). Optional.")]
         [SerializeField] private AudioClip attackImpactSound;
 
-        [Tooltip("Volume of attack sounds.")]
-        [Range(0f, 0.3f)]
-        [SerializeField] private float attackSoundVolume = 0.3f;
-
-        [Tooltip("Random pitch range for variety. 0 = none, 0.1 = subtle.")]
-        [Range(0f, 0.3f)]
-        [SerializeField] private float attackPitchVariation = 0.1f;
-
         [Header("Audio — Voice")]
-        [Tooltip("Snarl/scream played when the zombie spots the player and goes to attack. One picked randomly. Optional.")]
         [SerializeField] private AudioClip[] alertSounds;
-
-        [Tooltip("Random idle moans/groans played while wandering. One picked randomly each time.")]
         [SerializeField] private AudioClip[] idleMoans;
-
-        [Tooltip("Average seconds between idle moans. Set to 0 to disable idle moans.")]
         [SerializeField] private float idleMoanInterval = 8f;
-
-        [Tooltip("Random variance added/subtracted from idle moan interval so it doesn't feel robotic.")]
         [SerializeField] private float idleMoanIntervalVariance = 4f;
 
-        [Tooltip("Volume for voice sounds (alert + idle).")]
-        [Range(0f, 1f)]
-        [SerializeField] private float voiceVolume = 0.7f;
+        // ─── Volume CONSTANTS (hardcoded so multiple zombies don't blow your ears) ───
+        // Quiet by design. Each zombie individually is barely audible — 5+ zombies
+        // start to feel atmospheric without overwhelming the player.
+        private const float ATTACK_VOLUME       = 0.05f;
+        private const float VOICE_VOLUME        = 0.05f;
+        private const float ATTACK_PITCH_RANGE  = 0.1f;
+        // ─────────────────────────────────────────────────────────────────────
 
         [Header("Patrol")]
         [SerializeField] private float patrolRadius = 10f;
@@ -141,6 +114,10 @@ namespace ZombieAI
                 audioSource = gameObject.AddComponent<AudioSource>();
                 ConfigureAudioSource(audioSource);
             }
+            else
+            {
+                ConfigureAudioSource(audioSource);
+            }
 
             voiceAudioSource = gameObject.AddComponent<AudioSource>();
             ConfigureAudioSource(voiceAudioSource);
@@ -153,6 +130,7 @@ namespace ZombieAI
             src.minDistance = 2f;
             src.maxDistance = 25f;
             src.rolloffMode = AudioRolloffMode.Linear;
+            src.volume = 1f; // master volume on the source — actual loudness is set in PlayOneShot calls
         }
 
         private void Start()
@@ -166,7 +144,6 @@ namespace ZombieAI
                 if (playerObj != null)
                 {
                     player = playerObj.transform;
-                    Debug.Log($"[ZombieAI] Auto-found player: {playerObj.name}");
                 }
                 else
                 {
@@ -199,7 +176,6 @@ namespace ZombieAI
                     if (agent != null)
                     {
                         agent.Warp(newCatchUpSpot);
-                        Debug.LogWarning("RUBBER BAND TRIGGERED: Zombie teleported because it was " + distanceToPlayer + "m away!");
                     }
                 }
             }
@@ -269,14 +245,8 @@ namespace ZombieAI
             HandleVoiceForStateChange(prev, newState);
 
             OnStateChanged?.Invoke(prev, newState);
-
-            #if UNITY_EDITOR
-            Debug.Log($"[ZombieAI] {gameObject.name}: {prev} → {newState}");
-            #endif
         }
 
-        // Plays alert snarl when zombie escalates from a calm state to combat.
-        // Investigate sound was removed — use death sounds in Health.cs instead.
         private void HandleVoiceForStateChange(ZombieState prev, ZombieState next)
         {
             bool wasNonCombat = prev == ZombieState.Idle ||
@@ -519,10 +489,6 @@ namespace ZombieAI
             {
                 pendingDamageTimer = attackWindupTime;
             }
-
-            #if UNITY_EDITOR
-            Debug.Log($"[ZombieAI] {gameObject.name} starts kick — damage in {attackWindupTime}s");
-            #endif
         }
 
         public void AnimationEvent_DealDamage()
@@ -547,14 +513,17 @@ namespace ZombieAI
             ApplyKnockbackToPlayer();
         }
 
+        // FIXED: volume is now hardcoded to ATTACK_VOLUME (0.05f).
+        // No inspector slider to fiddle with — set it once here, every zombie inherits.
         private void PlayAttackSound(AudioClip clip)
         {
             if (clip == null || audioSource == null) return;
 
-            audioSource.pitch = 1f + Random.Range(-attackPitchVariation, attackPitchVariation);
-            audioSource.PlayOneShot(clip, attackSoundVolume);
+            audioSource.pitch = 1f + Random.Range(-ATTACK_PITCH_RANGE, ATTACK_PITCH_RANGE);
+            audioSource.PlayOneShot(clip, ATTACK_VOLUME);
         }
 
+        // FIXED: volume is now hardcoded to VOICE_VOLUME (0.05f).
         private void PlayRandomVoice(AudioClip[] clips)
         {
             if (clips == null || clips.Length == 0 || voiceAudioSource == null) return;
@@ -562,8 +531,8 @@ namespace ZombieAI
             AudioClip clip = clips[Random.Range(0, clips.Length)];
             if (clip == null) return;
 
-            voiceAudioSource.pitch = 1f + Random.Range(-attackPitchVariation, attackPitchVariation);
-            voiceAudioSource.PlayOneShot(clip, voiceVolume);
+            voiceAudioSource.pitch = 1f + Random.Range(-ATTACK_PITCH_RANGE, ATTACK_PITCH_RANGE);
+            voiceAudioSource.PlayOneShot(clip, VOICE_VOLUME);
         }
 
         private void ApplyKnockbackToPlayer()
@@ -594,7 +563,6 @@ namespace ZombieAI
             if (agent != null)
             {
                 agent.speed = baseSpeed;
-                Debug.Log("zombie spawned! base speed is now: " + agent.speed + " with a multiplier of: " + multiplier);
             }
         }
 
