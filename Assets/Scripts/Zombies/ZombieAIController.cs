@@ -35,7 +35,7 @@ namespace ZombieAI
         [Tooltip("Seconds between attacks (full swing-to-swing cycle).")]
         [SerializeField] private float attackCooldown = 1.5f;
 
-        [Tooltip("Seconds between starting the kick animation and the damage actually landing. Tune to match the foot-impact frame of your kick animation. Typical kicks: 0.3 - 0.5s.")]
+        [Tooltip("Seconds between starting the kick animation and the damage actually landing.")]
         [SerializeField] private float attackWindupTime = 0.4f;
 
         [Tooltip("If TRUE, damage is applied via Animation Event ONLY. If FALSE, uses Attack Windup Time delay.")]
@@ -45,8 +45,7 @@ namespace ZombieAI
         [SerializeField] private float knockbackForce = 8f;
         [SerializeField] private float knockbackUpwardForce = 2f;
 
-        // ─── NEW: Audio ────────────────────────────────────────────────
-        [Header("Audio")]
+        [Header("Audio — Attack")]
         [Tooltip("Sound played when the zombie BEGINS the kick (whoosh / swing). Optional.")]
         [SerializeField] private AudioClip attackSwingSound;
 
@@ -57,10 +56,26 @@ namespace ZombieAI
         [Range(0f, 0.3f)]
         [SerializeField] private float attackSoundVolume = 0.3f;
 
-        [Tooltip("Random pitch range for variety. 0 = no variation, 0.1 = subtle, 0.2 = noticeable.")]
+        [Tooltip("Random pitch range for variety. 0 = none, 0.1 = subtle.")]
         [Range(0f, 0.3f)]
         [SerializeField] private float attackPitchVariation = 0.1f;
-        // ───────────────────────────────────────────────────────────────
+
+        [Header("Audio — Voice")]
+        [Tooltip("Snarl/scream played when the zombie spots the player and goes to attack. One picked randomly. Optional.")]
+        [SerializeField] private AudioClip[] alertSounds;
+
+        [Tooltip("Random idle moans/groans played while wandering. One picked randomly each time.")]
+        [SerializeField] private AudioClip[] idleMoans;
+
+        [Tooltip("Average seconds between idle moans. Set to 0 to disable idle moans.")]
+        [SerializeField] private float idleMoanInterval = 8f;
+
+        [Tooltip("Random variance added/subtracted from idle moan interval so it doesn't feel robotic.")]
+        [SerializeField] private float idleMoanIntervalVariance = 4f;
+
+        [Tooltip("Volume for voice sounds (alert + idle).")]
+        [Range(0f, 1f)]
+        [SerializeField] private float voiceVolume = 0.7f;
 
         [Header("Patrol")]
         [SerializeField] private float patrolRadius = 10f;
@@ -86,7 +101,8 @@ namespace ZombieAI
         public ZombieState CurrentState { get; private set; } = ZombieState.Idle;
 
         private NavMeshAgent agent;
-        private AudioSource audioSource; // NEW
+        private AudioSource audioSource;
+        private AudioSource voiceAudioSource;
         private float baseSpeed;
 
         private float stateTimer;
@@ -94,6 +110,8 @@ namespace ZombieAI
         private float idleTimer;
         private bool isIdleStanding;
         private float pendingDamageTimer = -1f;
+
+        private float nextIdleMoanTime;
 
         private Vector3 spawnPosition;
 
@@ -117,17 +135,24 @@ namespace ZombieAI
             baseSpeed = agent.speed;
             spawnPosition = transform.position;
 
-            // NEW: get or create an AudioSource for attack sounds
             audioSource = GetComponent<AudioSource>();
             if (audioSource == null)
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
-                audioSource.playOnAwake = false;
-                audioSource.spatialBlend = 1f;     // 3D sound — fades with distance
-                audioSource.minDistance = 2f;
-                audioSource.maxDistance = 25f;
-                audioSource.rolloffMode = AudioRolloffMode.Linear;
+                ConfigureAudioSource(audioSource);
             }
+
+            voiceAudioSource = gameObject.AddComponent<AudioSource>();
+            ConfigureAudioSource(voiceAudioSource);
+        }
+
+        private void ConfigureAudioSource(AudioSource src)
+        {
+            src.playOnAwake = false;
+            src.spatialBlend = 1f;
+            src.minDistance = 2f;
+            src.maxDistance = 25f;
+            src.rolloffMode = AudioRolloffMode.Linear;
         }
 
         private void Start()
@@ -158,6 +183,7 @@ namespace ZombieAI
                 transform.position = hit.position;
             }
 
+            ScheduleNextIdleMoan();
             TransitionTo(ZombieState.Idle);
         }
 
@@ -202,6 +228,8 @@ namespace ZombieAI
                     soundsHeardRecently = 0;
             }
 
+            UpdateIdleMoans();
+
             if (player != null && CurrentState != ZombieState.Attack)
             {
                 float distToPlayer = Vector3.Distance(transform.position, player.position);
@@ -238,11 +266,29 @@ namespace ZombieAI
             CurrentState = newState;
             OnEnterState(newState);
 
+            HandleVoiceForStateChange(prev, newState);
+
             OnStateChanged?.Invoke(prev, newState);
 
             #if UNITY_EDITOR
             Debug.Log($"[ZombieAI] {gameObject.name}: {prev} → {newState}");
             #endif
+        }
+
+        // Plays alert snarl when zombie escalates from a calm state to combat.
+        // Investigate sound was removed — use death sounds in Health.cs instead.
+        private void HandleVoiceForStateChange(ZombieState prev, ZombieState next)
+        {
+            bool wasNonCombat = prev == ZombieState.Idle ||
+                                prev == ZombieState.InvestigateSound ||
+                                prev == ZombieState.SearchArea;
+
+            bool nowCombat = next == ZombieState.Attack || next == ZombieState.Chase;
+
+            if (wasNonCombat && nowCombat)
+            {
+                PlayRandomVoice(alertSounds);
+            }
         }
 
         private void OnEnterState(ZombieState state)
@@ -434,13 +480,35 @@ namespace ZombieAI
             }
         }
 
+        // ───────────────────────── Idle Moans ────────────────────────────────
+
+        private void UpdateIdleMoans()
+        {
+            if (idleMoanInterval <= 0f || idleMoans == null || idleMoans.Length == 0)
+                return;
+
+            if (CurrentState != ZombieState.Idle && CurrentState != ZombieState.SearchArea)
+                return;
+
+            if (Time.time >= nextIdleMoanTime)
+            {
+                PlayRandomVoice(idleMoans);
+                ScheduleNextIdleMoan();
+            }
+        }
+
+        private void ScheduleNextIdleMoan()
+        {
+            nextIdleMoanTime = Time.time + idleMoanInterval +
+                               Random.Range(-idleMoanIntervalVariance, idleMoanIntervalVariance);
+        }
+
         // ───────────────────────── Actions ──────────────────────────────────
 
         private void PerformAttack()
         {
             OnAttackPerformed?.Invoke();
 
-            // NEW: play swing sound at the start of the kick
             PlayAttackSound(attackSwingSound);
 
             if (useAnimationEventForDamage)
@@ -470,27 +538,32 @@ namespace ZombieAI
             if (Vector3.Distance(transform.position, player.position) > attackRange * 1.2f)
                 return;
 
-            // Damage
             if (player.TryGetComponent(out PlayerHealth health))
             {
                 health.TakeDamage(attackDamage);
             }
 
-            // NEW: play impact sound when the kick connects
             PlayAttackSound(attackImpactSound);
-
-            // Knockback
             ApplyKnockbackToPlayer();
         }
 
-        // NEW: helper that plays a clip with optional pitch variation.
         private void PlayAttackSound(AudioClip clip)
         {
             if (clip == null || audioSource == null) return;
 
-            // Random pitch for variety so repeated kicks don't sound identical
             audioSource.pitch = 1f + Random.Range(-attackPitchVariation, attackPitchVariation);
             audioSource.PlayOneShot(clip, attackSoundVolume);
+        }
+
+        private void PlayRandomVoice(AudioClip[] clips)
+        {
+            if (clips == null || clips.Length == 0 || voiceAudioSource == null) return;
+
+            AudioClip clip = clips[Random.Range(0, clips.Length)];
+            if (clip == null) return;
+
+            voiceAudioSource.pitch = 1f + Random.Range(-attackPitchVariation, attackPitchVariation);
+            voiceAudioSource.PlayOneShot(clip, voiceVolume);
         }
 
         private void ApplyKnockbackToPlayer()

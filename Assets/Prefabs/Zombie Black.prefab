@@ -105,6 +105,13 @@ MonoBehaviour:
   maxHealth: 100
   bloodHitPrefab: {fileID: 21541557506291251, guid: 1a6b79adeb6d847a88c72342b5022e33, type: 3}
   deathBloodPrefab: {fileID: 3329534176141858028, guid: 1a19dcb9e9a8b40bd9ed27ba09bc94c4, type: 3}
+  destroyDelay: 3
+  hitReactCooldown: 0.25
+  lockPositionAfterDeath: 1
+  deathSounds:
+  - {fileID: 8300000, guid: a088754ba707d482dba64e7172ed2512, type: 3}
+  deathSoundVolume: 0.4
+  deathPitchVariation: 0.1
 --- !u!114 &3991259072188509219
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,6 +127,10 @@ MonoBehaviour:
   animatedRoot: {fileID: 155836714472601656}
   lockY: 1
   applyRotation: 1
+  snapToGround: 1
+  groundRayStart: 2
+  groundRayDistance: 10
+  allowMotion: 1
 --- !u!82 &-5985130164019282640
 AudioSource:
   m_ObjectHideFlags: 0
@@ -980,6 +991,13 @@ MonoBehaviour:
   attackImpactSound: {fileID: 8300000, guid: e5c3d84a923187e4faabd41690cb832c, type: 3}
   attackSoundVolume: 0.3
   attackPitchVariation: 0.3
+  alertSounds:
+  - {fileID: 8300000, guid: afd55d4091b7c467d8e62e3e9528aea4, type: 3}
+  idleMoans:
+  - {fileID: 8300000, guid: 7bd8c81c1735343b8b844225351511e2, type: 3}
+  idleMoanInterval: 8
+  idleMoanIntervalVariance: 4
+  voiceVolume: 0.4
   patrolRadius: 10
   idleWaitTime: 3
   investigateTimeout: 6
